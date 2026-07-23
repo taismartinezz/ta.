@@ -44,6 +44,7 @@ export function ResultsView({
   const [reactionRows, setReactionRows] = useState<ReactionRow[]>(reactions);
   const [locking, setLocking] = useState(false);
   const [lockError, setLockError] = useState<string | null>(null);
+  const [confirmingLockIndex, setConfirmingLockIndex] = useState<number | null>(null);
   const [feedback, setFeedback] = useState("");
   const [regenerating, setRegenerating] = useState(false);
   const [regenerateError, setRegenerateError] = useState<string | null>(null);
@@ -102,9 +103,6 @@ export function ResultsView({
   }
 
   async function handleLock(optionIndex: number) {
-    if (!confirm("Lock this in as the group's final choice? This can't be undone.")) {
-      return;
-    }
     setLockError(null);
     setLocking(true);
     try {
@@ -118,6 +116,7 @@ export function ResultsView({
         setLockError(data.error || "Something went wrong");
         return;
       }
+      setConfirmingLockIndex(null);
       router.refresh();
     } catch {
       setLockError("Something went wrong, try again");
@@ -232,7 +231,33 @@ export function ResultsView({
                 </button>
               )}
 
-              {!isLocked && (
+              {!isLocked && confirmingLockIndex === i && (
+                <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950">
+                  <p className="text-amber-900 dark:text-amber-200">
+                    Lock this in as the group&apos;s final choice? This can&apos;t be undone.
+                  </p>
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleLock(i)}
+                      disabled={locking}
+                      className="rounded-full bg-black px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+                    >
+                      {locking ? "Locking in..." : "Yes, lock it in"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingLockIndex(null)}
+                      disabled={locking}
+                      className="rounded-full border border-black/10 px-3 py-1.5 text-xs dark:border-white/10"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {!isLocked && confirmingLockIndex !== i && (
                 <div className="mt-4 flex items-center gap-4 border-t border-black/10 pt-4 dark:border-white/10">
                   <button
                     type="button"
@@ -260,8 +285,7 @@ export function ResultsView({
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleLock(i)}
-                    disabled={locking}
+                    onClick={() => setConfirmingLockIndex(i)}
                     className="ml-auto rounded-full bg-black px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
                   >
                     Lock in this option
