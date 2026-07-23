@@ -1,28 +1,11 @@
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
+// Server-only client: uses the secret key to bypass RLS. Safe here because
+// there's no Supabase Auth session to manage — trip access is via the
+// shareable link, enforced entirely by the API routes, never the browser.
 export async function createClient() {
-  const cookieStore = await cookies();
-
-  return createServerClient(
+  return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {
-            // setAll called from a Server Component; safe to ignore
-            // when middleware is refreshing the session instead.
-          }
-        },
-      },
-    }
+    process.env.SUPABASE_SECRET_KEY!
   );
 }
