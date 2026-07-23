@@ -1,10 +1,13 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { buildAirbnbSearchUrl } from "@/lib/airbnb";
 import type { ItineraryOption } from "@/lib/types";
 import { ResultsView } from "./ResultsView";
 import { DateOverlapChart } from "./DateOverlapChart";
 import { BudgetOverlapChart } from "./BudgetOverlapChart";
+import { RecommendationsSection } from "./RecommendationsSection";
 
 export default async function ResultsPage({
   params,
@@ -16,7 +19,7 @@ export default async function ResultsPage({
 
   const { data: trip } = await supabase
     .from("trips")
-    .select("id, organizer_name")
+    .select("id, organizer_name, cover_image_url")
     .eq("slug", slug)
     .single();
 
@@ -45,17 +48,22 @@ export default async function ResultsPage({
     );
   }
 
-  const [{ data: reactions }, { data: participants }, { data: submissions }] = await Promise.all([
-    supabase
-      .from("itinerary_reactions")
-      .select("participant_id, option_index, reaction")
-      .eq("generated_output_id", output.id),
-    supabase.from("participants").select("id, name").eq("trip_id", trip.id),
-    supabase
-      .from("submissions")
-      .select("participant_id, available_dates, budget_amount, budget_currency")
-      .eq("trip_id", trip.id),
-  ]);
+  const [{ data: reactions }, { data: participants }, { data: submissions }, { data: recommendations }] =
+    await Promise.all([
+      supabase
+        .from("itinerary_reactions")
+        .select("participant_id, option_index, reaction")
+        .eq("generated_output_id", output.id),
+      supabase.from("participants").select("id, name").eq("trip_id", trip.id),
+      supabase
+        .from("submissions")
+        .select("participant_id, available_dates, budget_amount, budget_currency")
+        .eq("trip_id", trip.id),
+      supabase
+        .from("trip_recommendations")
+        .select("id, participant_id, place_name, note")
+        .eq("trip_id", trip.id),
+    ]);
 
   let destinationReasoning: string | null = null;
   try {
@@ -72,6 +80,14 @@ export default async function ResultsPage({
 
   const itineraryOptions = (output.itinerary_options ?? []) as ItineraryOption[];
   const openQuestions = (output.open_questions ?? []) as string[];
+  const dayCount = itineraryOptions[0]?.days.length ?? 0;
+  const airbnbUrl = output.destination_pick
+    ? buildAirbnbSearchUrl({
+        destination: output.destination_pick,
+        startDateISO: output.recommended_start_date,
+        dayCount,
+      })
+    : null;
 
   const nameByParticipantId = new Map((participants ?? []).map((p) => [p.id, p.name]));
   const dateParticipants = (submissions ?? [])
@@ -82,6 +98,12 @@ export default async function ResultsPage({
     }));
   const budgetAmounts = (submissions ?? []).map((s) => Number(s.budget_amount));
   const primaryCurrency = (submissions ?? [])[0]?.budget_currency ?? "USD";
+  const recommendationRows = (recommendations ?? []).map((r) => ({
+    id: r.id,
+    place_name: r.place_name,
+    note: r.note,
+    participant_name: nameByParticipantId.get(r.participant_id) ?? "Someone",
+  }));
 
   return (
     <div className="mx-auto flex min-h-screen max-w-4xl flex-col gap-8 px-6 py-16 text-black dark:text-zinc-50">
@@ -92,14 +114,37 @@ export default async function ResultsPage({
         <h1 className="mt-4 text-2xl font-semibold">{trip.organizer_name}&apos;s trip plan</h1>
       </div>
 
-      <div className="rounded-xl border border-black/10 p-5 dark:border-white/10">
-        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-          Destination pick
-        </p>
-        <p className="mt-2 text-xl font-semibold">{output.destination_pick}</p>
-        {destinationReasoning && (
-          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{destinationReasoning}</p>
+      <div className="overflow-hidden rounded-xl border border-black/10 dark:border-white/10">
+        {trip.cover_image_url && (
+          <div className="relative h-48 w-full bg-zinc-100 dark:bg-zinc-900">
+            <Image
+              src={trip.cover_image_url}
+              alt=""
+              fill
+              className="object-cover"
+              unoptimized
+            />
+          </div>
         )}
+        <div className="p-5">
+          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+            Destination pick
+          </p>
+          <p className="mt-2 text-xl font-semibold">{output.destination_pick}</p>
+          {destinationReasoning && (
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{destinationReasoning}</p>
+          )}
+          {airbnbUrl && (
+            <a
+              href={airbnbUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-block rounded-full border border-black/10 px-3 py-1.5 text-sm dark:border-white/10"
+            >
+              🏠 Search stays on Airbnb ↗
+            </a>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -124,6 +169,8 @@ export default async function ResultsPage({
           />
         </div>
       </div>
+
+      <RecommendationsSection slug={slug} initialRecommendations={recommendationRows} />
 
       {openQuestions.length > 0 && (
         <div className="rounded-xl border border-amber-300 bg-amber-50 p-5 dark:border-amber-800 dark:bg-amber-950">

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { participantStorageKey } from "@/lib/participant-storage";
 import { buildICS, downloadICS } from "@/lib/ics";
+import { VoiceInputButton } from "@/app/VoiceInputButton";
 import { MapView } from "./MapView";
 import type { ItineraryOption, ReactionType } from "@/lib/types";
 
@@ -49,6 +50,7 @@ export function ResultsView({
   const [regenerating, setRegenerating] = useState(false);
   const [regenerateError, setRegenerateError] = useState<string | null>(null);
   const [myBudget, setMyBudget] = useState<MyBudget | null>(null);
+  const [justLocked, setJustLocked] = useState(false);
 
   const isLocked = lockedOptionIndex !== null;
 
@@ -117,6 +119,7 @@ export function ResultsView({
         return;
       }
       setConfirmingLockIndex(null);
+      setJustLocked(true);
       router.refresh();
     } catch {
       setLockError("Something went wrong, try again");
@@ -180,7 +183,7 @@ export function ResultsView({
                 isThisLocked
                   ? "border-green-400 dark:border-green-700"
                   : "border-black/10 dark:border-white/10"
-              }`}
+              } ${isThisLocked && justLocked ? "animate-lock-reveal" : ""}`}
             >
               <div className="flex items-center justify-between gap-2">
                 <p className="text-lg font-semibold">{option.label}</p>
@@ -308,13 +311,20 @@ export function ResultsView({
             e.g. &quot;more relaxing&quot;, &quot;cheaper&quot;, &quot;swap day 3 for something
             outdoors&quot;
           </p>
-          <textarea
-            value={feedback}
-            onChange={(e) => setFeedback(e.target.value)}
-            rows={2}
-            placeholder="What should change?"
-            className="mt-3 w-full rounded-lg border border-black/10 px-3 py-2 text-sm dark:border-white/10 dark:bg-zinc-900"
-          />
+          <div className="mt-3 flex items-start gap-2">
+            <textarea
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              rows={2}
+              placeholder="What should change?"
+              className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm dark:border-white/10 dark:bg-zinc-900"
+            />
+            <VoiceInputButton
+              onTranscribed={(text) =>
+                setFeedback((prev) => (prev ? `${prev} ${text}` : text))
+              }
+            />
+          </div>
           {regenerateError && (
             <p className="mt-2 text-sm text-red-600 dark:text-red-400">{regenerateError}</p>
           )}

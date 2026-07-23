@@ -1,9 +1,23 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { MIN_BUDGET_AMOUNT, MAX_BUDGET_AMOUNT } from "@/lib/constants";
-import type { ActivityLevel } from "@/lib/types";
+import type { ActivityLevel, InterestLevel, PacePreference } from "@/lib/types";
 
 const ACTIVITY_LEVELS: ActivityLevel[] = ["relaxing", "balanced", "adventurous"];
+const INTEREST_LEVELS: InterestLevel[] = ["low", "medium", "high"];
+const PACE_PREFERENCES: PacePreference[] = ["relaxed", "balanced", "packed"];
+
+function optionalInterestLevel(value: unknown): InterestLevel | null {
+  return typeof value === "string" && INTEREST_LEVELS.includes(value as InterestLevel)
+    ? (value as InterestLevel)
+    : null;
+}
+
+function optionalPacePreference(value: unknown): PacePreference | null {
+  return typeof value === "string" && PACE_PREFERENCES.includes(value as PacePreference)
+    ? (value as PacePreference)
+    : null;
+}
 
 function isDateRangeArray(value: unknown): value is { start: string; end: string }[] {
   return (
@@ -95,6 +109,11 @@ export async function POST(
     flagged_as_outlier,
     participant_adjusted,
     shared_to_group_anonymously,
+    favorite_cuisines,
+    languages_spoken,
+    bucket_list_interest,
+    nightlife_interest,
+    pace_preference,
   } = body;
 
   if (typeof edit_token !== "string") {
@@ -168,6 +187,11 @@ export async function POST(
         must_haves: Array.isArray(must_haves) ? must_haves : [],
         dealbreakers: Array.isArray(dealbreakers) ? dealbreakers : [],
         activity_interests: Array.isArray(activity_interests) ? activity_interests : [],
+        favorite_cuisines: Array.isArray(favorite_cuisines) ? favorite_cuisines : null,
+        languages_spoken: Array.isArray(languages_spoken) ? languages_spoken : null,
+        bucket_list_interest: optionalInterestLevel(bucket_list_interest),
+        nightlife_interest: optionalInterestLevel(nightlife_interest),
+        pace_preference: optionalPacePreference(pace_preference),
         updated_at: new Date().toISOString(),
       },
       { onConflict: "participant_id" }

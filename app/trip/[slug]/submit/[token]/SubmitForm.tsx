@@ -5,7 +5,8 @@ import { participantStorageKey, editTokenStorageKey } from "@/lib/participant-st
 import { ACTIVITY_INTEREST_OPTIONS } from "@/lib/activity-options";
 import { MIN_BUDGET_AMOUNT, MAX_BUDGET_AMOUNT } from "@/lib/constants";
 import { getAuthHeaders } from "@/lib/supabase/auth-header";
-import type { ActivityLevel, Submission, TripStatus } from "@/lib/types";
+import { VoiceInputButton } from "@/app/VoiceInputButton";
+import type { ActivityLevel, InterestLevel, PacePreference, Submission, TripStatus } from "@/lib/types";
 
 interface ReusableSubmission {
   budget_amount: number;
@@ -14,7 +15,24 @@ interface ReusableSubmission {
   must_haves: string[];
   dealbreakers: string[];
   activity_interests: string[];
+  favorite_cuisines: string[] | null;
+  languages_spoken: string[] | null;
+  bucket_list_interest: InterestLevel | null;
+  nightlife_interest: InterestLevel | null;
+  pace_preference: PacePreference | null;
 }
+
+const INTEREST_LEVELS: { value: InterestLevel; label: string }[] = [
+  { value: "low", label: "Not really" },
+  { value: "medium", label: "Somewhat" },
+  { value: "high", label: "Very" },
+];
+
+const PACE_PREFERENCES: { value: PacePreference; label: string }[] = [
+  { value: "relaxed", label: "Relaxed" },
+  { value: "balanced", label: "Balanced" },
+  { value: "packed", label: "Packed" },
+];
 
 interface DateRangeInput {
   start: string;
@@ -78,6 +96,22 @@ export function SubmitForm({
   const [activityInterests, setActivityInterests] = useState<string[]>(
     initialSubmission?.activity_interests ?? []
   );
+  const [favoriteCuisines, setFavoriteCuisines] = useState(
+    (initialSubmission?.favorite_cuisines ?? []).join(", ")
+  );
+  const [languagesSpoken, setLanguagesSpoken] = useState(
+    (initialSubmission?.languages_spoken ?? []).join(", ")
+  );
+  const [bucketListInterest, setBucketListInterest] = useState<InterestLevel | null>(
+    initialSubmission?.bucket_list_interest ?? null
+  );
+  const [nightlifeInterest, setNightlifeInterest] = useState<InterestLevel | null>(
+    initialSubmission?.nightlife_interest ?? null
+  );
+  const [pacePreference, setPacePreference] = useState<PacePreference | null>(
+    initialSubmission?.pace_preference ?? null
+  );
+  const [showMorePreferences, setShowMorePreferences] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
@@ -145,6 +179,11 @@ export function SubmitForm({
     setMustHaves(reusableSubmission.must_haves.join(", "));
     setDealbreakers(reusableSubmission.dealbreakers.join(", "));
     setActivityInterests(reusableSubmission.activity_interests);
+    setFavoriteCuisines((reusableSubmission.favorite_cuisines ?? []).join(", "));
+    setLanguagesSpoken((reusableSubmission.languages_spoken ?? []).join(", "));
+    setBucketListInterest(reusableSubmission.bucket_list_interest);
+    setNightlifeInterest(reusableSubmission.nightlife_interest);
+    setPacePreference(reusableSubmission.pace_preference);
     setPrefilled(true);
   }
 
@@ -237,6 +276,11 @@ export function SubmitForm({
           must_haves: parseTags(mustHaves),
           dealbreakers: parseTags(dealbreakers),
           activity_interests: activityInterests,
+          favorite_cuisines: parseTags(favoriteCuisines),
+          languages_spoken: parseTags(languagesSpoken),
+          bucket_list_interest: bucketListInterest,
+          nightlife_interest: nightlifeInterest,
+          pace_preference: pacePreference,
           flagged_as_outlier: sawOutlierFlag,
           participant_adjusted: sawOutlierFlag && budgetAtFirstFlag !== null && budget !== budgetAtFirstFlag,
           shared_to_group_anonymously: sawOutlierFlag && shareAnonymously,
@@ -416,26 +460,150 @@ export function SubmitForm({
 
       <fieldset className="flex flex-col gap-3">
         <legend className="text-sm font-semibold">Must-haves</legend>
-        <input
-          type="text"
-          value={mustHaves}
-          onChange={(e) => setMustHaves(e.target.value)}
-          placeholder="e.g. pool, private rooms, walkable to town"
-          className="rounded-lg border border-black/10 px-3 py-2 dark:border-white/10 dark:bg-zinc-900"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={mustHaves}
+            onChange={(e) => setMustHaves(e.target.value)}
+            placeholder="e.g. pool, private rooms, walkable to town"
+            className="w-full rounded-lg border border-black/10 px-3 py-2 dark:border-white/10 dark:bg-zinc-900"
+          />
+          <VoiceInputButton
+            onTranscribed={(text) =>
+              setMustHaves((prev) => (prev ? `${prev}, ${text}` : text))
+            }
+          />
+        </div>
         <p className="text-xs text-zinc-500">Comma-separated</p>
       </fieldset>
 
       <fieldset className="flex flex-col gap-3">
         <legend className="text-sm font-semibold">Dealbreakers</legend>
-        <input
-          type="text"
-          value={dealbreakers}
-          onChange={(e) => setDealbreakers(e.target.value)}
-          placeholder="e.g. no camping, no red-eye flights"
-          className="rounded-lg border border-black/10 px-3 py-2 dark:border-white/10 dark:bg-zinc-900"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={dealbreakers}
+            onChange={(e) => setDealbreakers(e.target.value)}
+            placeholder="e.g. no camping, no red-eye flights"
+            className="w-full rounded-lg border border-black/10 px-3 py-2 dark:border-white/10 dark:bg-zinc-900"
+          />
+          <VoiceInputButton
+            onTranscribed={(text) =>
+              setDealbreakers((prev) => (prev ? `${prev}, ${text}` : text))
+            }
+          />
+        </div>
         <p className="text-xs text-zinc-500">Comma-separated</p>
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-3">
+        <button
+          type="button"
+          onClick={() => setShowMorePreferences((v) => !v)}
+          className="self-start text-sm underline"
+        >
+          {showMorePreferences ? "Hide" : "Add more preferences (optional)"}
+        </button>
+
+        {showMorePreferences && (
+          <div className="flex flex-col gap-6 rounded-xl border border-black/10 p-4 dark:border-white/10">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-semibold">Favorite cuisines</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={favoriteCuisines}
+                  onChange={(e) => setFavoriteCuisines(e.target.value)}
+                  placeholder="e.g. Thai, Italian, tacos"
+                  className="w-full rounded-lg border border-black/10 px-3 py-2 dark:border-white/10 dark:bg-zinc-900"
+                />
+                <VoiceInputButton
+                  onTranscribed={(text) =>
+                    setFavoriteCuisines((prev) => (prev ? `${prev}, ${text}` : text))
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-semibold">Languages spoken</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={languagesSpoken}
+                  onChange={(e) => setLanguagesSpoken(e.target.value)}
+                  placeholder="e.g. English, Spanish"
+                  className="w-full rounded-lg border border-black/10 px-3 py-2 dark:border-white/10 dark:bg-zinc-900"
+                />
+                <VoiceInputButton
+                  onTranscribed={(text) =>
+                    setLanguagesSpoken((prev) => (prev ? `${prev}, ${text}` : text))
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <p className="text-sm font-semibold">Into &quot;bucket list&quot; adventure activities?</p>
+              <div className="flex gap-2">
+                {INTEREST_LEVELS.map((level) => (
+                  <button
+                    key={level.value}
+                    type="button"
+                    onClick={() => setBucketListInterest(level.value)}
+                    className={`rounded-full px-3 py-1.5 text-sm ${
+                      bucketListInterest === level.value
+                        ? "bg-black text-white dark:bg-white dark:text-black"
+                        : "border border-black/10 dark:border-white/10"
+                    }`}
+                  >
+                    {level.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <p className="text-sm font-semibold">Into nightlife?</p>
+              <div className="flex gap-2">
+                {INTEREST_LEVELS.map((level) => (
+                  <button
+                    key={level.value}
+                    type="button"
+                    onClick={() => setNightlifeInterest(level.value)}
+                    className={`rounded-full px-3 py-1.5 text-sm ${
+                      nightlifeInterest === level.value
+                        ? "bg-black text-white dark:bg-white dark:text-black"
+                        : "border border-black/10 dark:border-white/10"
+                    }`}
+                  >
+                    {level.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <p className="text-sm font-semibold">Preferred pace</p>
+              <div className="flex gap-2">
+                {PACE_PREFERENCES.map((pace) => (
+                  <button
+                    key={pace.value}
+                    type="button"
+                    onClick={() => setPacePreference(pace.value)}
+                    className={`rounded-full px-3 py-1.5 text-sm ${
+                      pacePreference === pace.value
+                        ? "bg-black text-white dark:bg-white dark:text-black"
+                        : "border border-black/10 dark:border-white/10"
+                    }`}
+                  >
+                    {pace.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </fieldset>
 
       {tripStatus !== "collecting" && (

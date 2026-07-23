@@ -2,8 +2,13 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { generateTripPlan } from "@/lib/gemini";
 import { geocodePlaceNames } from "@/lib/geocode";
+import { fetchWikipediaImage } from "@/lib/wikipedia-image";
 import { MIN_SUBMISSIONS_TO_GENERATE } from "@/lib/constants";
 import type { Submission, ItineraryOption } from "@/lib/types";
+
+// Geocoding (rate-limited to ~1 req/sec) plus the LLM calls can comfortably
+// exceed Vercel's default function timeout.
+export const maxDuration = 60;
 
 export async function POST(
   request: Request,
@@ -70,11 +75,20 @@ export async function POST(
   }
 
   // Geocode once here (not per page view) — cheap relative to the LLM call,
-  // and keeps us well within Nominatim's usage policy.
+  // and keeps us well within Nominatim's usage policy. Runs alongside the
+  // Wikipedia photo lookup since neither depends on the other.
   const allPlaceNames = plan.itinerary_options.flatMap((option) =>
     option.days.flatMap((day) => day.locations ?? [])
   );
-  const geocoded = allPlaceNames.length > 0 ? await geocodePlaceNames(allPlaceNames) : new Map();
+
+  const [geocoded, coverImageUrl] = await Promise.all([
+    allPlaceNames.length > 0 ? geocodePlaceNames(allPlaceNames) : Promise.resolve(new Map()),
+    fetchWikipediaImage(plan.destination_photo_query || plan.destination_pick),
+  ]);
+
+  if (coverImageUrl) {
+    await supabase.from("trips").update({ cover_image_url: coverImageUrl }).eq("id", trip.id);
+  }
 
   const itineraryOptionsWithGeo: ItineraryOption[] = plan.itinerary_options.map((option) => ({
     label: option.label,
