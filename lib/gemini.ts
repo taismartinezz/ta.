@@ -11,10 +11,11 @@ Input: an array of participant submissions, each with budget, available dates, a
 
 Rules you MUST follow:
 1. Pick ONE destination/accommodation approach based on majority alignment across submissions (budget range overlap + activity level fit). Do not just average — reason about which option most participants' constraints support.
-2. Generate exactly TWO day-by-day itinerary options that differ meaningfully by budget level and vibe (e.g. one lower-cost/relaxed, one higher-budget/adventurous).
-3. For EVERY activity you include in either itinerary, at least 2 participants' activity_interests must support it. If fewer than 2 people want an activity, do not include it, even if it fits the vibe.
-4. List any open questions the group still needs to resolve as a group (e.g. unresolved date conflicts, a dealbreaker that conflicts with the majority pick).
-5. Do not mention any participant by name in a way that singles them out negatively (e.g. don't say "X's dealbreaker forced us to avoid Y") — describe constraints in aggregate.
+2. Generate exactly TWO day-by-day itinerary options that differ meaningfully by budget level and vibe (e.g. one lower-cost/relaxed, one higher-budget/adventurous). EVERY day in EVERY option must list at least one activity — a day with an empty activities list is never acceptable.
+3. Activities that correspond to one of the specific activity_interests categories submitted (e.g. hiking, museums, nightlife, beach) may only be included if at least 2 participants indicated interest in that category. If fewer than 2 people want a specific-interest activity, do not include it, even if it fits the vibe.
+4. General itinerary anchors that are NOT tied to a specific interest category — arrival/departure logistics, meals, checking into lodging, free time, walking around the area, or light general sightseeing/relaxation appropriate to the group's overall activity_level — do NOT require 2-person interest support and should always be used to fill out each day. Use these to guarantee every day has real, concrete content, especially when few activity_interests categories reach the 2-person threshold.
+5. List any open questions the group still needs to resolve as a group (e.g. unresolved date conflicts, a dealbreaker that conflicts with the majority pick, or the fact that few shared activity interests were submitted).
+6. Do not mention any participant by name in a way that singles them out negatively (e.g. don't say "X's dealbreaker forced us to avoid Y") — describe constraints in aggregate.
 
 Return ONLY valid JSON matching this exact schema, no other text:
 {

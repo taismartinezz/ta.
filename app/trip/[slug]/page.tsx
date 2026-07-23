@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { GroupView } from "./GroupView";
-import { GenerateButton } from "./GenerateButton";
 
 export default async function TripPage({
   params,
@@ -60,21 +59,24 @@ export default async function TripPage({
         initialSubmittedIds={(submissions ?? []).map((s) => s.participant_id)}
       />
 
-      <Link
-        href={`/trip/${trip.slug}/join`}
-        className="rounded-full bg-black px-5 py-2.5 text-center text-sm font-medium text-white dark:bg-white dark:text-black"
-      >
-        Join this trip
-      </Link>
-
-      <div className="flex items-center gap-4">
-        <GenerateButton slug={trip.slug} />
-        {trip.status !== "collecting" && (
-          <Link href={`/trip/${trip.slug}/results`} className="text-sm underline">
-            View latest itinerary
-          </Link>
-        )}
+      <div className="flex flex-col gap-2">
+        <Link
+          href={`/trip/${trip.slug}/join`}
+          className="rounded-full bg-black px-5 py-2.5 text-center text-sm font-medium text-white dark:bg-white dark:text-black"
+        >
+          Join this trip
+        </Link>
+        <p className="text-center text-xs text-zinc-500">
+          Creating the trip doesn&apos;t automatically add you as a participant — click above
+          if you want to submit your own preferences too.
+        </p>
       </div>
+
+      {trip.status !== "collecting" && (
+        <Link href={`/trip/${trip.slug}/results`} className="text-sm underline">
+          View latest itinerary
+        </Link>
+      )}
     </div>
   );
 }

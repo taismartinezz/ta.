@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { generateTripPlan } from "@/lib/gemini";
+import { MIN_SUBMISSIONS_TO_GENERATE } from "@/lib/constants";
 import type { Submission } from "@/lib/types";
-
-const MIN_SUBMISSIONS_TO_GENERATE = 2;
 
 export async function POST(
   request: Request,

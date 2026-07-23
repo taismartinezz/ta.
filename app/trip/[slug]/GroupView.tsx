@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { MIN_SUBMISSIONS_TO_GENERATE } from "@/lib/constants";
 
 interface ParticipantRow {
   id: string;
@@ -19,11 +21,14 @@ export function GroupView({
   initialParticipants: ParticipantRow[];
   initialSubmittedIds: string[];
 }) {
+  const router = useRouter();
   const [participants, setParticipants] = useState<ParticipantRow[]>(initialParticipants);
   const [submittedIds, setSubmittedIds] = useState<Set<string>>(
     () => new Set(initialSubmittedIds)
   );
   const [nudged, setNudged] = useState<Set<string>>(new Set());
+  const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -78,6 +83,26 @@ export function GroupView({
     }
   }
 
+  async function handleGenerate() {
+    setGenerateError(null);
+    setGenerating(true);
+    try {
+      const res = await fetch(`/api/trips/${slug}/generate`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setGenerateError(data.error || "Something went wrong");
+        return;
+      }
+      router.push(`/trip/${slug}/results`);
+    } catch {
+      setGenerateError("Something went wrong, try again");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  const canGenerate = submittedIds.size >= MIN_SUBMISSIONS_TO_GENERATE;
+
   return (
     <div className="rounded-xl border border-black/10 p-4 dark:border-white/10">
       <p className="text-sm font-medium text-black dark:text-zinc-50">
@@ -111,6 +136,24 @@ export function GroupView({
           <li className="text-sm text-zinc-400">No one has joined yet.</li>
         )}
       </ul>
+
+      <div className="mt-4 flex flex-col gap-2 border-t border-black/10 pt-4 dark:border-white/10">
+        <button
+          type="button"
+          onClick={handleGenerate}
+          disabled={!canGenerate || generating}
+          className="rounded-full bg-black px-5 py-2.5 text-center text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+        >
+          {generating ? "Generating..." : "Generate itinerary options"}
+        </button>
+        {!canGenerate && (
+          <p className="text-xs text-zinc-500">
+            Need at least {MIN_SUBMISSIONS_TO_GENERATE} submissions before generating
+            ({submittedIds.size}/{MIN_SUBMISSIONS_TO_GENERATE} so far).
+          </p>
+        )}
+        {generateError && <p className="text-sm text-red-600 dark:text-red-400">{generateError}</p>}
+      </div>
     </div>
   );
 }

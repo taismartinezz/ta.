@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { MIN_BUDGET_AMOUNT, MAX_BUDGET_AMOUNT } from "@/lib/constants";
 import type { ActivityLevel } from "@/lib/types";
 
 const ACTIVITY_LEVELS: ActivityLevel[] = ["relaxing", "balanced", "adventurous"];
@@ -16,6 +17,10 @@ function isDateRangeArray(value: unknown): value is { start: string; end: string
         typeof (r as Record<string, unknown>).end === "string"
     )
   );
+}
+
+function hasInvalidDateOrder(dateRanges: { start: string; end: string }[]): boolean {
+  return dateRanges.some((r) => r.end <= r.start);
 }
 
 export async function POST(
@@ -46,9 +51,19 @@ export async function POST(
   if (typeof participant_id !== "string") {
     return NextResponse.json({ error: "participant_id is required" }, { status: 400 });
   }
-  if (typeof budget_amount !== "number" || !Number.isFinite(budget_amount) || budget_amount <= 0) {
+  if (
+    typeof budget_amount !== "number" ||
+    !Number.isFinite(budget_amount) ||
+    budget_amount < MIN_BUDGET_AMOUNT
+  ) {
     return NextResponse.json(
       { error: "budget_amount must be a positive number" },
+      { status: 400 }
+    );
+  }
+  if (budget_amount > MAX_BUDGET_AMOUNT) {
+    return NextResponse.json(
+      { error: `budget_amount must be ${MAX_BUDGET_AMOUNT} or less` },
       { status: 400 }
     );
   }
@@ -58,6 +73,12 @@ export async function POST(
   if (!isDateRangeArray(available_dates)) {
     return NextResponse.json(
       { error: "available_dates must be a non-empty array of {start, end}" },
+      { status: 400 }
+    );
+  }
+  if (hasInvalidDateOrder(available_dates)) {
+    return NextResponse.json(
+      { error: "End date must be after the start date for each date range" },
       { status: 400 }
     );
   }

@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { participantStorageKey } from "@/lib/participant-storage";
 import { ACTIVITY_INTEREST_OPTIONS } from "@/lib/activity-options";
+import { MIN_BUDGET_AMOUNT, MAX_BUDGET_AMOUNT } from "@/lib/constants";
 import type { ActivityLevel } from "@/lib/types";
 
 interface DateRangeInput {
@@ -128,14 +129,23 @@ export function SubmitForm({ slug }: { slug: string }) {
     }
 
     const budget = Number(budgetAmount);
-    if (!Number.isFinite(budget) || budget <= 0) {
+    if (!Number.isFinite(budget) || budget < MIN_BUDGET_AMOUNT) {
       setError("Enter a valid budget");
+      return;
+    }
+    if (budget > MAX_BUDGET_AMOUNT) {
+      setError(`Budget must be ${MAX_BUDGET_AMOUNT.toLocaleString()} or less`);
       return;
     }
 
     const validDateRanges = dateRanges.filter((r) => r.start && r.end);
     if (validDateRanges.length === 0) {
       setError("Add at least one available date range");
+      return;
+    }
+
+    if (validDateRanges.some((r) => r.end <= r.start)) {
+      setError("End date must be after the start date for each date range");
       return;
     }
 
@@ -197,7 +207,8 @@ export function SubmitForm({ slug }: { slug: string }) {
         <div className="flex gap-3">
           <input
             type="number"
-            min="0"
+            min={MIN_BUDGET_AMOUNT}
+            max={MAX_BUDGET_AMOUNT}
             value={budgetAmount}
             onChange={(e) => setBudgetAmount(e.target.value)}
             onBlur={handleBudgetBlur}
