@@ -23,6 +23,55 @@ function hasInvalidDateOrder(dateRanges: { start: string; end: string }[]): bool
   return dateRanges.some((r) => r.end <= r.start);
 }
 
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  const { slug } = await params;
+  const { searchParams } = new URL(request.url);
+  const token = searchParams.get("token");
+
+  if (!token) {
+    return NextResponse.json({ error: "token is required" }, { status: 400 });
+  }
+
+  const supabase = await createClient();
+
+  const { data: trip, error: tripError } = await supabase
+    .from("trips")
+    .select("id, status")
+    .eq("slug", slug)
+    .single();
+
+  if (tripError || !trip) {
+    return NextResponse.json({ error: "Trip not found" }, { status: 404 });
+  }
+
+  const { data: participant, error: participantError } = await supabase
+    .from("participants")
+    .select("id, name")
+    .eq("trip_id", trip.id)
+    .eq("edit_token", token)
+    .single();
+
+  if (participantError || !participant) {
+    return NextResponse.json({ error: "Invalid edit link" }, { status: 404 });
+  }
+
+  const { data: submission } = await supabase
+    .from("submissions")
+    .select("*")
+    .eq("participant_id", participant.id)
+    .maybeSingle();
+
+  return NextResponse.json({
+    participant_id: participant.id,
+    participant_name: participant.name,
+    trip_status: trip.status,
+    submission: submission ?? null,
+  });
+}
+
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ slug: string }> }
@@ -35,7 +84,7 @@ export async function POST(
   }
 
   const {
-    participant_id,
+    edit_token,
     budget_amount,
     budget_currency,
     available_dates,
@@ -48,8 +97,8 @@ export async function POST(
     shared_to_group_anonymously,
   } = body;
 
-  if (typeof participant_id !== "string") {
-    return NextResponse.json({ error: "participant_id is required" }, { status: 400 });
+  if (typeof edit_token !== "string") {
+    return NextResponse.json({ error: "edit_token is required" }, { status: 400 });
   }
   if (
     typeof budget_amount !== "number" ||
@@ -98,30 +147,31 @@ export async function POST(
   const { data: participant, error: participantError } = await supabase
     .from("participants")
     .select("id")
-    .eq("id", participant_id)
     .eq("trip_id", trip.id)
+    .eq("edit_token", edit_token)
     .single();
 
   if (participantError || !participant) {
-    return NextResponse.json(
-      { error: "Participant not found on this trip" },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: "Invalid edit link" }, { status: 404 });
   }
 
   const { data: submission, error } = await supabase
     .from("submissions")
-    .insert({
-      trip_id: trip.id,
-      participant_id,
-      budget_amount,
-      budget_currency: typeof budget_currency === "string" ? budget_currency : "USD",
-      available_dates,
-      activity_level,
-      must_haves: Array.isArray(must_haves) ? must_haves : [],
-      dealbreakers: Array.isArray(dealbreakers) ? dealbreakers : [],
-      activity_interests: Array.isArray(activity_interests) ? activity_interests : [],
-    })
+    .upsert(
+      {
+        trip_id: trip.id,
+        participant_id: participant.id,
+        budget_amount,
+        budget_currency: typeof budget_currency === "string" ? budget_currency : "USD",
+        available_dates,
+        activity_level,
+        must_haves: Array.isArray(must_haves) ? must_haves : [],
+        dealbreakers: Array.isArray(dealbreakers) ? dealbreakers : [],
+        activity_interests: Array.isArray(activity_interests) ? activity_interests : [],
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "participant_id" }
+    )
     .select("id")
     .single();
 

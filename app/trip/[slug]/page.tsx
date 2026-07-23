@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { GroupView } from "./GroupView";
+import { CopyLinkButton } from "./CopyLinkButton";
 
 export default async function TripPage({
   params,
@@ -50,6 +51,7 @@ export default async function TripPage({
         <code className="mt-2 block break-all rounded-lg bg-zinc-100 px-3 py-2 text-sm dark:bg-zinc-900">
           /trip/{trip.slug}/join
         </code>
+        <CopyLinkButton slug={trip.slug} />
       </div>
 
       <GroupView

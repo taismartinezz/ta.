@@ -11,24 +11,32 @@ Input: an array of participant submissions, each with budget, available dates, a
 
 Rules you MUST follow:
 1. Pick ONE destination/accommodation approach based on majority alignment across submissions (budget range overlap + activity level fit). Do not just average — reason about which option most participants' constraints support.
-2. Generate exactly TWO day-by-day itinerary options that differ meaningfully by budget level and vibe (e.g. one lower-cost/relaxed, one higher-budget/adventurous). EVERY day in EVERY option must list at least one activity — a day with an empty activities list is never acceptable.
-3. Activities that correspond to one of the specific activity_interests categories submitted (e.g. hiking, museums, nightlife, beach) may only be included if at least 2 participants indicated interest in that category. If fewer than 2 people want a specific-interest activity, do not include it, even if it fits the vibe.
-4. General itinerary anchors that are NOT tied to a specific interest category — arrival/departure logistics, meals, checking into lodging, free time, walking around the area, or light general sightseeing/relaxation appropriate to the group's overall activity_level — do NOT require 2-person interest support and should always be used to fill out each day. Use these to guarantee every day has real, concrete content, especially when few activity_interests categories reach the 2-person threshold.
-5. List any open questions the group still needs to resolve as a group (e.g. unresolved date conflicts, a dealbreaker that conflicts with the majority pick, or the fact that few shared activity interests were submitted).
-6. Do not mention any participant by name in a way that singles them out negatively (e.g. don't say "X's dealbreaker forced us to avoid Y") — describe constraints in aggregate.
+2. Pick ONE recommended trip start date that best fits the overlap across everyone's available_dates windows. If there is no full overlap, pick the date that satisfies the most participants and mention the conflict in open_questions.
+3. Generate exactly TWO day-by-day itinerary options that differ meaningfully by budget level and vibe (e.g. one lower-cost/relaxed, one higher-budget/adventurous). EVERY day in EVERY option must list at least one activity — a day with an empty activities list is never acceptable. Both options should span the same number of days, counted from the recommended start date.
+4. Activities that correspond to one of the specific activity_interests categories submitted (e.g. hiking, museums, nightlife, beach) may only be included if at least 2 participants indicated interest in that category. If fewer than 2 people want a specific-interest activity, do not include it, even if it fits the vibe.
+5. General itinerary anchors that are NOT tied to a specific interest category — arrival/departure logistics, meals, checking into lodging, free time, walking around the area, or light general sightseeing/relaxation appropriate to the group's overall activity_level — do NOT require 2-person interest support and should always be used to fill out each day. Use these to guarantee every day has real, concrete content, especially when few activity_interests categories reach the 2-person threshold.
+6. For each day, also list 1-3 concrete, real, mappable place names for that day's activities (e.g. "El Yunque National Forest, Puerto Rico", not "a nice hiking trail") — specific enough to be geocoded on a map. Omit this if a day is genuinely just unstructured free time with no specific place.
+7. For each itinerary option, estimate a realistic total cost per person for the whole trip, in the currency most participants used, reasoning from typical real-world costs for that destination and vibe — not just copying a submitted budget number.
+8. List any open questions the group still needs to resolve as a group (e.g. unresolved date conflicts, a dealbreaker that conflicts with the majority pick, or the fact that few shared activity interests were submitted).
+9. Do not mention any participant by name in a way that singles them out negatively (e.g. don't say "X's dealbreaker forced us to avoid Y") — describe constraints in aggregate.
 
 Return ONLY valid JSON matching this exact schema, no other text:
 {
   "destination_pick": string,
   "destination_reasoning": string,
+  "recommended_start_date": string, // YYYY-MM-DD
   "itinerary_options": [
     {
       "label": string, // e.g. "Budget-friendly & relaxed"
-      "days": [ { "day_number": number, "activities": [string] } ]
+      "estimated_cost_per_person": number,
+      "estimated_cost_currency": string,
+      "days": [ { "day_number": number, "activities": [string], "locations": [string] } ]
     },
     {
       "label": string,
-      "days": [ { "day_number": number, "activities": [string] } ]
+      "estimated_cost_per_person": number,
+      "estimated_cost_currency": string,
+      "days": [ { "day_number": number, "activities": [string], "locations": [string] } ]
     }
   ],
   "open_questions": [string]
@@ -40,14 +48,17 @@ Submissions:
 export interface GeneratedTripPlan {
   destination_pick: string;
   destination_reasoning: string;
+  recommended_start_date: string;
   itinerary_options: {
     label: string;
-    days: { day_number: number; activities: string[] }[];
+    estimated_cost_per_person: number;
+    estimated_cost_currency: string;
+    days: { day_number: number; activities: string[]; locations?: string[] }[];
   }[];
   open_questions: string[];
 }
 
-function buildPrompt(submissions: Submission[]): string {
+function buildPrompt(submissions: Submission[], feedback: string | null): string {
   const submissionsForPrompt = submissions.map((s) => ({
     budget_amount: s.budget_amount,
     budget_currency: s.budget_currency,
@@ -58,20 +69,27 @@ function buildPrompt(submissions: Submission[]): string {
     activity_interests: s.activity_interests,
   }));
 
-  return SYSTEM_INSTRUCTION.replace(
+  let prompt = SYSTEM_INSTRUCTION.replace(
     "{{submissions_json}}",
     JSON.stringify(submissionsForPrompt, null, 2)
   );
+
+  if (feedback) {
+    prompt += `\n\nThe group already reviewed a previous version of this plan and asked for the following changes — incorporate this feedback while still following every rule above:\n${feedback}`;
+  }
+
+  return prompt;
 }
 
 export async function generateTripPlan(
-  submissions: Submission[]
+  submissions: Submission[],
+  feedback: string | null = null
 ): Promise<{ plan: GeneratedTripPlan; raw: Record<string, unknown> }> {
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
   const response = await ai.models.generateContent({
     model: MODEL,
-    contents: buildPrompt(submissions),
+    contents: buildPrompt(submissions, feedback),
     config: {
       responseMimeType: "application/json",
     },

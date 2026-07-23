@@ -29,6 +29,12 @@ export function GroupView({
   const [nudged, setNudged] = useState<Set<string>>(new Set());
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const [justUpdatedId, setJustUpdatedId] = useState<string | null>(null);
+
+  function flashUpdate(participantId: string) {
+    setJustUpdatedId(participantId);
+    setTimeout(() => setJustUpdatedId((current) => (current === participantId ? null : current)), 2000);
+  }
 
   useEffect(() => {
     const supabase = createClient();
@@ -48,6 +54,7 @@ export function GroupView({
           setParticipants((prev) =>
             prev.some((p) => p.id === row.id) ? prev : [...prev, { id: row.id, name: row.name }]
           );
+          flashUpdate(row.id);
         }
       )
       .on(
@@ -61,6 +68,7 @@ export function GroupView({
         (payload) => {
           const row = payload.new as { participant_id: string };
           setSubmittedIds((prev) => new Set(prev).add(row.participant_id));
+          flashUpdate(row.participant_id);
         }
       )
       .subscribe();
@@ -112,7 +120,9 @@ export function GroupView({
         {participants.map((p) => (
           <li
             key={p.id}
-            className="flex items-center justify-between text-sm text-black dark:text-zinc-50"
+            className={`flex items-center justify-between rounded-lg px-2 py-1 text-sm text-black transition-colors duration-1000 dark:text-zinc-50 ${
+              justUpdatedId === p.id ? "bg-blue-50 dark:bg-blue-950" : ""
+            }`}
           >
             <span>{p.name}</span>
             {submittedIds.has(p.id) ? (

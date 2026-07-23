@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { generateSlug } from "@/lib/slug";
+import { getUserFromAuthHeader } from "@/lib/supabase/verify-token";
 
 const MAX_SLUG_ATTEMPTS = 5;
 const UNIQUE_VIOLATION = "23505";
@@ -17,13 +18,14 @@ export async function POST(request: Request) {
     );
   }
 
+  const user = await getUserFromAuthHeader(request.headers.get("authorization"));
   const supabase = await createClient();
 
   for (let attempt = 0; attempt < MAX_SLUG_ATTEMPTS; attempt++) {
     const slug = generateSlug();
     const { data, error } = await supabase
       .from("trips")
-      .insert({ organizer_name: organizerName, slug })
+      .insert({ organizer_name: organizerName, slug, created_by: user?.id ?? null })
       .select("slug")
       .single();
 

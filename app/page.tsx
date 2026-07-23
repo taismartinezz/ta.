@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { getAuthHeaders } from "@/lib/supabase/auth-header";
 
 export default function Home() {
   const router = useRouter();
@@ -20,9 +21,10 @@ export default function Home() {
 
     setLoading(true);
     try {
+      const authHeaders = await getAuthHeaders();
       const res = await fetch("/api/trips", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ organizer_name: organizerName.trim() }),
       });
       const data = await res.json();

@@ -1,16 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-
-interface ItineraryDay {
-  day_number: number;
-  activities: string[];
-}
-
-interface ItineraryOption {
-  label: string;
-  days: ItineraryDay[];
-}
+import type { ItineraryOption } from "@/lib/types";
+import { ResultsView } from "./ResultsView";
+import { DateOverlapChart } from "./DateOverlapChart";
+import { BudgetOverlapChart } from "./BudgetOverlapChart";
 
 export default async function ResultsPage({
   params,
@@ -32,7 +26,9 @@ export default async function ResultsPage({
 
   const { data: output } = await supabase
     .from("generated_outputs")
-    .select("destination_pick, itinerary_options, open_questions, raw_llm_response")
+    .select(
+      "id, destination_pick, itinerary_options, open_questions, raw_llm_response, locked_option_index, regeneration_feedback, recommended_start_date"
+    )
     .eq("trip_id", trip.id)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -49,6 +45,18 @@ export default async function ResultsPage({
     );
   }
 
+  const [{ data: reactions }, { data: participants }, { data: submissions }] = await Promise.all([
+    supabase
+      .from("itinerary_reactions")
+      .select("participant_id, option_index, reaction")
+      .eq("generated_output_id", output.id),
+    supabase.from("participants").select("id, name").eq("trip_id", trip.id),
+    supabase
+      .from("submissions")
+      .select("participant_id, available_dates, budget_amount, budget_currency")
+      .eq("trip_id", trip.id),
+  ]);
+
   let destinationReasoning: string | null = null;
   try {
     const rawText = (output.raw_llm_response as { text?: string } | null)?.text;
@@ -64,6 +72,16 @@ export default async function ResultsPage({
 
   const itineraryOptions = (output.itinerary_options ?? []) as ItineraryOption[];
   const openQuestions = (output.open_questions ?? []) as string[];
+
+  const nameByParticipantId = new Map((participants ?? []).map((p) => [p.id, p.name]));
+  const dateParticipants = (submissions ?? [])
+    .filter((s) => Array.isArray(s.available_dates) && s.available_dates.length > 0)
+    .map((s) => ({
+      name: nameByParticipantId.get(s.participant_id) ?? "Someone",
+      ranges: s.available_dates as { start: string; end: string }[],
+    }));
+  const budgetAmounts = (submissions ?? []).map((s) => Number(s.budget_amount));
+  const primaryCurrency = (submissions ?? [])[0]?.budget_currency ?? "USD";
 
   return (
     <div className="mx-auto flex min-h-screen max-w-4xl flex-col gap-8 px-6 py-16 text-black dark:text-zinc-50">
@@ -84,28 +102,26 @@ export default async function ResultsPage({
         )}
       </div>
 
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <DateOverlapChart participants={dateParticipants} />
+        <BudgetOverlapChart amounts={budgetAmounts} currency={primaryCurrency} />
+      </div>
+
       <div>
         <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
           Itinerary options
         </p>
-        <div className="mt-3 grid grid-cols-1 gap-6 md:grid-cols-2">
-          {itineraryOptions.map((option, i) => (
-            <div key={i} className="rounded-xl border border-black/10 p-5 dark:border-white/10">
-              <p className="text-lg font-semibold">{option.label}</p>
-              <div className="mt-4 flex flex-col gap-4">
-                {option.days.map((day) => (
-                  <div key={day.day_number}>
-                    <p className="text-sm font-semibold text-zinc-500">Day {day.day_number}</p>
-                    <ul className="mt-1 list-inside list-disc text-sm">
-                      {day.activities.map((activity, j) => (
-                        <li key={j}>{activity}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
+        <div className="mt-3">
+          <ResultsView
+            slug={slug}
+            outputId={output.id}
+            tripLabel={`${trip.organizer_name}'s trip`}
+            itineraryOptions={itineraryOptions}
+            reactions={reactions ?? []}
+            lockedOptionIndex={output.locked_option_index}
+            regenerationFeedback={output.regeneration_feedback}
+            recommendedStartDate={output.recommended_start_date}
+          />
         </div>
       </div>
 

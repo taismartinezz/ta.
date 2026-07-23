@@ -1,11 +1,20 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
-import { participantStorageKey } from "@/lib/participant-storage";
+import { participantStorageKey, editTokenStorageKey } from "@/lib/participant-storage";
 import { ACTIVITY_INTEREST_OPTIONS } from "@/lib/activity-options";
 import { MIN_BUDGET_AMOUNT, MAX_BUDGET_AMOUNT } from "@/lib/constants";
-import type { ActivityLevel } from "@/lib/types";
+import { getAuthHeaders } from "@/lib/supabase/auth-header";
+import type { ActivityLevel, Submission, TripStatus } from "@/lib/types";
+
+interface ReusableSubmission {
+  budget_amount: number;
+  budget_currency: string;
+  activity_level: ActivityLevel;
+  must_haves: string[];
+  dealbreakers: string[];
+  activity_interests: string[];
+}
 
 interface DateRangeInput {
   start: string;
@@ -30,38 +39,75 @@ function parseTags(value: string): string[] {
     .filter(Boolean);
 }
 
-export function SubmitForm({ slug }: { slug: string }) {
-  const router = useRouter();
-  const [participantId] = useState<string | null>(() =>
-    typeof window === "undefined" ? null : localStorage.getItem(participantStorageKey(slug))
+function toDateRangeInputs(dates: Submission["available_dates"] | undefined): DateRangeInput[] {
+  if (!dates || dates.length === 0) {
+    return [{ start: "", end: "" }];
+  }
+  return dates.map((d) => ({ start: d.start, end: d.end }));
+}
+
+export function SubmitForm({
+  slug,
+  token,
+  tripStatus,
+  initialSubmission,
+}: {
+  slug: string;
+  token: string;
+  tripStatus: TripStatus;
+  initialSubmission: Submission | null;
+}) {
+  const isEditMode = initialSubmission !== null;
+
+  const [budgetAmount, setBudgetAmount] = useState(
+    initialSubmission ? String(initialSubmission.budget_amount) : ""
   );
-  const [budgetAmount, setBudgetAmount] = useState("");
-  const [budgetCurrency, setBudgetCurrency] = useState("USD");
-  const [dateRanges, setDateRanges] = useState<DateRangeInput[]>([{ start: "", end: "" }]);
-  const [activityLevel, setActivityLevel] = useState<ActivityLevel>("balanced");
-  const [mustHaves, setMustHaves] = useState("");
-  const [dealbreakers, setDealbreakers] = useState("");
-  const [activityInterests, setActivityInterests] = useState<string[]>([]);
+  const [budgetCurrency, setBudgetCurrency] = useState(
+    initialSubmission?.budget_currency ?? "USD"
+  );
+  const [dateRanges, setDateRanges] = useState<DateRangeInput[]>(
+    toDateRangeInputs(initialSubmission?.available_dates)
+  );
+  const [activityLevel, setActivityLevel] = useState<ActivityLevel>(
+    initialSubmission?.activity_level ?? "balanced"
+  );
+  const [mustHaves, setMustHaves] = useState((initialSubmission?.must_haves ?? []).join(", "));
+  const [dealbreakers, setDealbreakers] = useState(
+    (initialSubmission?.dealbreakers ?? []).join(", ")
+  );
+  const [activityInterests, setActivityInterests] = useState<string[]>(
+    initialSubmission?.activity_interests ?? []
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
   const [outlierResult, setOutlierResult] = useState<OutlierCheckResponse | null>(null);
   const [budgetAtFirstFlag, setBudgetAtFirstFlag] = useState<number | null>(null);
   const [sawOutlierFlag, setSawOutlierFlag] = useState(false);
   const [shareAnonymously, setShareAnonymously] = useState(false);
   const [wasNudged, setWasNudged] = useState(false);
+  const [reusableSubmission, setReusableSubmission] = useState<ReusableSubmission | null>(null);
+  const [prefilled, setPrefilled] = useState(false);
 
   useEffect(() => {
-    if (!participantId) {
-      router.replace(`/trip/${slug}/join`);
-    }
-  }, [participantId, slug, router]);
+    // Sync this device's "who am I on this trip" storage from the edit link,
+    // so results-page voting recognizes this participant too.
+    localStorage.setItem(editTokenStorageKey(slug), token);
+    fetch(`/api/trips/${slug}/submit?token=${token}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.participant_id) {
+          localStorage.setItem(participantStorageKey(slug), data.participant_id);
+        }
+      })
+      .catch(() => {
+        // Best-effort — voting identity sync isn't required for this page to work.
+      });
+  }, [slug, token]);
 
   useEffect(() => {
-    if (!participantId) {
-      return;
-    }
-    fetch(`/api/trips/${slug}/nudge?participant_id=${participantId}`)
+    fetch(`/api/trips/${slug}/nudge?participant_id=${initialSubmission?.participant_id ?? ""}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.nudged) {
@@ -71,7 +117,36 @@ export function SubmitForm({ slug }: { slug: string }) {
       .catch(() => {
         // Best-effort — the banner just won't show if this fails.
       });
-  }, [participantId, slug]);
+  }, [slug, initialSubmission?.participant_id]);
+
+  useEffect(() => {
+    if (isEditMode) return; // Prefill only makes sense for a first-time, blank submission.
+    getAuthHeaders().then((headers) => {
+      if (!headers.Authorization) return;
+      fetch(`/api/me/last-submission`, { headers })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.submission) {
+            setReusableSubmission(data.submission);
+          }
+        })
+        .catch(() => {
+          // Best-effort — the prefill button just won't show if this fails.
+        });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function applyPrefill() {
+    if (!reusableSubmission) return;
+    setBudgetAmount(String(reusableSubmission.budget_amount));
+    setBudgetCurrency(reusableSubmission.budget_currency);
+    setActivityLevel(reusableSubmission.activity_level);
+    setMustHaves(reusableSubmission.must_haves.join(", "));
+    setDealbreakers(reusableSubmission.dealbreakers.join(", "));
+    setActivityInterests(reusableSubmission.activity_interests);
+    setPrefilled(true);
+  }
 
   function updateDateRange(index: number, field: keyof DateRangeInput, value: string) {
     setDateRanges((prev) =>
@@ -103,7 +178,10 @@ export function SubmitForm({ slug }: { slug: string }) {
       const res = await fetch(`/api/trips/${slug}/check-budget`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ budget_amount: amount }),
+        body: JSON.stringify({
+          budget_amount: amount,
+          participant_id: initialSubmission?.participant_id,
+        }),
       });
       if (!res.ok) {
         return;
@@ -122,11 +200,7 @@ export function SubmitForm({ slug }: { slug: string }) {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-
-    if (!participantId) {
-      setError("You need to join this trip first");
-      return;
-    }
+    setJustSaved(false);
 
     const budget = Number(budgetAmount);
     if (!Number.isFinite(budget) || budget < MIN_BUDGET_AMOUNT) {
@@ -155,7 +229,7 @@ export function SubmitForm({ slug }: { slug: string }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          participant_id: participantId,
+          edit_token: token,
           budget_amount: budget,
           budget_currency: budgetCurrency,
           available_dates: validDateRanges,
@@ -173,7 +247,12 @@ export function SubmitForm({ slug }: { slug: string }) {
         setError(data.error || "Something went wrong");
         return;
       }
-      setSubmitted(true);
+
+      if (isEditMode) {
+        setJustSaved(true);
+      } else {
+        setSubmitted(true);
+      }
     } catch {
       setError("Something went wrong, try again");
     } finally {
@@ -187,6 +266,9 @@ export function SubmitForm({ slug }: { slug: string }) {
         <p className="text-lg font-medium text-black dark:text-zinc-50">
           Thanks — your preferences are saved.
         </p>
+        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+          Bookmark this page if you want to come back and edit your answers later.
+        </p>
         <a href={`/trip/${slug}`} className="mt-3 inline-block text-sm underline">
           Back to the group view
         </a>
@@ -199,6 +281,21 @@ export function SubmitForm({ slug }: { slug: string }) {
       {wasNudged && (
         <div className="rounded-lg border border-blue-300 bg-blue-50 p-3 text-sm text-blue-900 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200">
           👋 Your group is waiting on you to submit your preferences!
+        </div>
+      )}
+
+      {reusableSubmission && !prefilled && (
+        <div className="rounded-lg border border-black/10 p-3 text-sm dark:border-white/10">
+          <p className="text-zinc-600 dark:text-zinc-400">
+            You&apos;re logged in and have preferences from a previous trip.
+          </p>
+          <button
+            type="button"
+            onClick={applyPrefill}
+            className="mt-2 rounded-full border border-black/10 px-3 py-1 text-xs dark:border-white/10"
+          >
+            Reuse my last preferences
+          </button>
         </div>
       )}
 
@@ -341,14 +438,24 @@ export function SubmitForm({ slug }: { slug: string }) {
         <p className="text-xs text-zinc-500">Comma-separated</p>
       </fieldset>
 
+      {tripStatus !== "collecting" && (
+        <p className="text-xs text-amber-700 dark:text-amber-400">
+          Note: an itinerary already exists for this trip — saving here won&apos;t update it
+          automatically.
+        </p>
+      )}
+
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {justSaved && (
+        <p className="text-sm text-green-600 dark:text-green-400">✓ Saved</p>
+      )}
 
       <button
         type="submit"
         disabled={loading}
         className="rounded-full bg-black px-5 py-3 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
       >
-        {loading ? "Saving..." : "Submit my preferences"}
+        {loading ? "Saving..." : isEditMode ? "Save changes" : "Submit my preferences"}
       </button>
     </form>
   );
