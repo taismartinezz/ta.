@@ -48,12 +48,29 @@ export function SubmitForm({ slug }: { slug: string }) {
   const [budgetAtFirstFlag, setBudgetAtFirstFlag] = useState<number | null>(null);
   const [sawOutlierFlag, setSawOutlierFlag] = useState(false);
   const [shareAnonymously, setShareAnonymously] = useState(false);
+  const [wasNudged, setWasNudged] = useState(false);
 
   useEffect(() => {
     if (!participantId) {
       router.replace(`/trip/${slug}/join`);
     }
   }, [participantId, slug, router]);
+
+  useEffect(() => {
+    if (!participantId) {
+      return;
+    }
+    fetch(`/api/trips/${slug}/nudge?participant_id=${participantId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.nudged) {
+          setWasNudged(true);
+        }
+      })
+      .catch(() => {
+        // Best-effort — the banner just won't show if this fails.
+      });
+  }, [participantId, slug]);
 
   function updateDateRange(index: number, field: keyof DateRangeInput, value: string) {
     setDateRanges((prev) =>
@@ -169,6 +186,12 @@ export function SubmitForm({ slug }: { slug: string }) {
 
   return (
     <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-8 text-black dark:text-zinc-50">
+      {wasNudged && (
+        <div className="rounded-lg border border-blue-300 bg-blue-50 p-3 text-sm text-blue-900 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200">
+          👋 Your group is waiting on you to submit your preferences!
+        </div>
+      )}
+
       <fieldset className="flex flex-col gap-3">
         <legend className="text-sm font-semibold">Budget</legend>
         <div className="flex gap-3">

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { GroupView } from "./GroupView";
+import { GenerateButton } from "./GenerateButton";
 
 export default async function TripPage({
   params,
@@ -31,10 +33,6 @@ export default async function TripPage({
     .select("participant_id")
     .eq("trip_id", trip.id);
 
-  const submittedParticipantIds = new Set(
-    (submissions ?? []).map((s) => s.participant_id)
-  );
-
   return (
     <div className="mx-auto flex min-h-screen max-w-2xl flex-col gap-6 px-6 py-16">
       <div>
@@ -55,33 +53,12 @@ export default async function TripPage({
         </code>
       </div>
 
-      <div className="rounded-xl border border-black/10 p-4 dark:border-white/10">
-        <p className="text-sm font-medium text-black dark:text-zinc-50">
-          {participants?.length ?? 0} joined · {submittedParticipantIds.size} submitted
-        </p>
-        <ul className="mt-3 flex flex-col gap-2">
-          {(participants ?? []).map((p) => (
-            <li
-              key={p.id}
-              className="flex items-center justify-between text-sm text-black dark:text-zinc-50"
-            >
-              <span>{p.name}</span>
-              <span
-                className={
-                  submittedParticipantIds.has(p.id)
-                    ? "text-green-600 dark:text-green-400"
-                    : "text-zinc-400"
-                }
-              >
-                {submittedParticipantIds.has(p.id) ? "Submitted" : "Waiting"}
-              </span>
-            </li>
-          ))}
-          {(participants ?? []).length === 0 && (
-            <li className="text-sm text-zinc-400">No one has joined yet.</li>
-          )}
-        </ul>
-      </div>
+      <GroupView
+        tripId={trip.id}
+        slug={trip.slug}
+        initialParticipants={participants ?? []}
+        initialSubmittedIds={(submissions ?? []).map((s) => s.participant_id)}
+      />
 
       <Link
         href={`/trip/${trip.slug}/join`}
@@ -89,6 +66,15 @@ export default async function TripPage({
       >
         Join this trip
       </Link>
+
+      <div className="flex items-center gap-4">
+        <GenerateButton slug={trip.slug} />
+        {trip.status !== "collecting" && (
+          <Link href={`/trip/${trip.slug}/results`} className="text-sm underline">
+            View latest itinerary
+          </Link>
+        )}
+      </div>
     </div>
   );
 }
