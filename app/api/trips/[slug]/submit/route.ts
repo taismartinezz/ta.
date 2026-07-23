@@ -38,6 +38,9 @@ export async function POST(
     must_haves,
     dealbreakers,
     activity_interests,
+    flagged_as_outlier,
+    participant_adjusted,
+    shared_to_group_anonymously,
   } = body;
 
   if (typeof participant_id !== "string") {
@@ -103,6 +106,19 @@ export async function POST(
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  if (flagged_as_outlier === true) {
+    const { error: flagError } = await supabase.from("budget_flags").insert({
+      submission_id: submission.id,
+      flagged_as_outlier: true,
+      participant_adjusted: participant_adjusted === true,
+      shared_to_group_anonymously: shared_to_group_anonymously === true,
+    });
+
+    if (flagError) {
+      console.error("Failed to record budget flag", flagError);
+    }
   }
 
   return NextResponse.json({ submission_id: submission.id }, { status: 201 });

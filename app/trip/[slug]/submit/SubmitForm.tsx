@@ -11,6 +11,11 @@ interface DateRangeInput {
   end: string;
 }
 
+interface OutlierCheckResponse {
+  is_outlier: boolean;
+  group_median: number | null;
+}
+
 const ACTIVITY_LEVELS: { value: ActivityLevel; label: string }[] = [
   { value: "relaxing", label: "Relaxing" },
   { value: "balanced", label: "Balanced" },
@@ -39,6 +44,10 @@ export function SubmitForm({ slug }: { slug: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [outlierResult, setOutlierResult] = useState<OutlierCheckResponse | null>(null);
+  const [budgetAtFirstFlag, setBudgetAtFirstFlag] = useState<number | null>(null);
+  const [sawOutlierFlag, setSawOutlierFlag] = useState(false);
+  const [shareAnonymously, setShareAnonymously] = useState(false);
 
   useEffect(() => {
     if (!participantId) {
@@ -64,6 +73,32 @@ export function SubmitForm({ slug }: { slug: string }) {
     setActivityInterests((prev) =>
       prev.includes(option) ? prev.filter((o) => o !== option) : [...prev, option]
     );
+  }
+
+  async function handleBudgetBlur() {
+    const amount = Number(budgetAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/trips/${slug}/check-budget`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ budget_amount: amount }),
+      });
+      if (!res.ok) {
+        return;
+      }
+      const data: OutlierCheckResponse = await res.json();
+      setOutlierResult(data);
+      if (data.is_outlier) {
+        setSawOutlierFlag(true);
+        setBudgetAtFirstFlag((prev) => prev ?? amount);
+      }
+    } catch {
+      // Outlier check is a soft UX nicety — never blocks submission if it fails.
+    }
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -101,6 +136,9 @@ export function SubmitForm({ slug }: { slug: string }) {
           must_haves: parseTags(mustHaves),
           dealbreakers: parseTags(dealbreakers),
           activity_interests: activityInterests,
+          flagged_as_outlier: sawOutlierFlag,
+          participant_adjusted: sawOutlierFlag && budgetAtFirstFlag !== null && budget !== budgetAtFirstFlag,
+          shared_to_group_anonymously: sawOutlierFlag && shareAnonymously,
         }),
       });
       const data = await res.json();
@@ -139,6 +177,7 @@ export function SubmitForm({ slug }: { slug: string }) {
             min="0"
             value={budgetAmount}
             onChange={(e) => setBudgetAmount(e.target.value)}
+            onBlur={handleBudgetBlur}
             placeholder="Amount"
             className="w-full rounded-lg border border-black/10 px-3 py-2 dark:border-white/10 dark:bg-zinc-900"
           />
@@ -152,6 +191,23 @@ export function SubmitForm({ slug }: { slug: string }) {
             <option value="GBP">GBP</option>
           </select>
         </div>
+        {outlierResult?.is_outlier && (
+          <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950">
+            <p className="text-amber-900 dark:text-amber-200">
+              Your budget looks noticeably lower than what others in the group have
+              entered so far (group median ~{outlierResult.group_median} {budgetCurrency}).
+              This is only visible to you — feel free to adjust the amount above.
+            </p>
+            <label className="mt-2 flex items-center gap-2 text-amber-900 dark:text-amber-200">
+              <input
+                type="checkbox"
+                checked={shareAnonymously}
+                onChange={(e) => setShareAnonymously(e.target.checked)}
+              />
+              Flag this to the group anonymously (optional — no one will know it&apos;s you)
+            </label>
+          </div>
+        )}
       </fieldset>
 
       <fieldset className="flex flex-col gap-3">
