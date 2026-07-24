@@ -44,7 +44,7 @@ export default async function TripPage({
         </p>
       </div>
 
-      <div className="rounded-xl border border-border bg-surface p-4">
+      <div className="card grain p-4">
         <p className="text-sm font-medium text-foreground">
           Share this link with your group
         </p>
@@ -64,12 +64,12 @@ export default async function TripPage({
       <div className="flex flex-col gap-2">
         <Link
           href={`/trip/${trip.slug}/join`}
-          className="rounded-full bg-accent px-5 py-2.5 text-center text-sm font-medium text-accent-foreground"
+          className="btn-stamp bg-accent px-5 py-2.5 text-center text-sm font-medium text-accent-foreground"
         >
           Join this trip
         </Link>
         <p className="text-center text-xs text-muted">
-          Creating the trip doesn&apos;t automatically add you as a participant — click above
+          Creating the trip doesn&apos;t automatically add you as a participant. Click above
           if you want to submit your own preferences too.
         </p>
       </div>

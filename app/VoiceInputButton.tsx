@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { MicIcon, StopIcon } from "./icons";
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   let binary = "";
@@ -83,7 +84,13 @@ export function VoiceInputButton({ onTranscribed }: { onTranscribed: (text: stri
             : "border-accent bg-accent-soft text-accent hover:bg-accent hover:text-accent-foreground"
         }`}
       >
-        {transcribing ? "…" : recording ? "⏹" : "🎤"}
+        {transcribing ? (
+          <span className="text-xs">...</span>
+        ) : recording ? (
+          <StopIcon size={18} />
+        ) : (
+          <MicIcon size={20} />
+        )}
       </button>
       {error && <span className="text-xs text-red-600 dark:text-red-400">{error}</span>}
     </span>

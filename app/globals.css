@@ -1,46 +1,107 @@
 @import "tailwindcss";
 
 :root {
-  --background: #faf9f7;
-  --foreground: #1c1b1a;
-  --surface: #ffffff;
-  --border: #e7e3dc;
-  --muted: #78716c;
-  --accent: #0f766e;
-  --accent-foreground: #ffffff;
-  --accent-soft: #ccfbf1;
+  --background: #f1e7cf;
+  --surface: #fbf4e2;
+  --border: #d8c9a3;
+  --muted: #7a6f5d;
+  --foreground: #2b2420;
+  --accent: #3f5b45;
+  --accent-foreground: #fbf4e2;
+  --accent-soft: #dce5d6;
+  --rust: #b5502f;
+  --rust-soft: #f0dcd0;
+  --gold: #a97b1f;
+  --sky: #4f7986;
+  --shadow-color: 30 24 16;
 }
 
 @theme inline {
   --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --color-surface: var(--surface);
   --color-border: var(--border);
   --color-muted: var(--muted);
+  --color-foreground: var(--foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent-soft: var(--accent-soft);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-rust: var(--rust);
+  --color-rust-soft: var(--rust-soft);
+  --color-gold: var(--gold);
+  --color-sky: var(--sky);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #1c1b1a;
-    --foreground: #f2f0ed;
-    --surface: #27251f;
-    --border: #3c3934;
-    --muted: #a39e96;
-    --accent: #2dd4bf;
-    --accent-foreground: #0b1f1c;
-    --accent-soft: #134e4a;
+    --background: #201a13;
+    --surface: #2b2318;
+    --border: #473a27;
+    --muted: #b6a687;
+    --foreground: #f0e6cd;
+    --accent: #86ad84;
+    --accent-foreground: #12201a;
+    --accent-soft: #33402c;
+    --rust: #e08c60;
+    --rust-soft: #3d2c22;
+    --gold: #dcb454;
+    --sky: #9dc7d1;
+    --shadow-color: 0 0 0;
   }
+}
+
+/* Subtle fractal-noise paper grain, tiled and blended into every warm
+   background so flat colors read as textured stock rather than digital flats. */
+.grain {
+  position: relative;
+}
+.grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: multiply;
+  opacity: 0.55;
+  border-radius: inherit;
+}
+@media (prefers-color-scheme: dark) {
+  .grain::before {
+    mix-blend-mode: overlay;
+    opacity: 0.35;
+  }
+}
+
+/* A torn-paper edge instead of a sharp rectangle, on the top and bottom
+   only so straight side edges keep layouts predictable. */
+.deckle {
+  clip-path: polygon(
+    0% 0.8%, 12.5% 0%, 25% 1.6%, 37.5% 0%, 50% 1.6%, 62.5% 0%, 75% 1.6%, 87.5% 0%, 100% 0.8%,
+    100% 99.2%, 87.5% 100%, 75% 98.4%, 62.5% 100%, 50% 98.4%, 37.5% 100%, 25% 98.4%, 12.5% 100%, 0% 99.2%
+  );
+}
+
+.card {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 10px rgb(var(--shadow-color) / 0.12);
+}
+
+.btn-stamp {
+  border-radius: 0.9rem;
+  outline: 1.5px dashed color-mix(in srgb, var(--gold) 70%, transparent);
+  outline-offset: 3px;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), sans-serif;
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-display), serif;
 }
 
 @keyframes lock-reveal {

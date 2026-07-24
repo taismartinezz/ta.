@@ -39,7 +39,7 @@ export function buildICS(
       `UID:${startDateISO}-day${day.day_number}-${index}@ta-trip-planner`,
       `DTSTART;VALUE=DATE:${formatDate(dayStart)}`,
       `DTEND;VALUE=DATE:${formatDate(dayEnd)}`,
-      `SUMMARY:${escapeText(`${tripLabel} — Day ${day.day_number}`)}`,
+      `SUMMARY:${escapeText(`${tripLabel}, Day ${day.day_number}`)}`,
       `DESCRIPTION:${escapeText(day.activities.join("\n"))}`,
       "END:VEVENT"
     );

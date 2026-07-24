@@ -23,12 +23,12 @@ export function BudgetOverlapChart({
   const bandWidth = min === max ? 100 : ((Math.min(median + (max - min) * 0.08, max) - min) / (max - min)) * 100 - bandLeft;
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-5">
+    <div className="card grain p-5">
       <p className="text-xs font-semibold uppercase tracking-wide text-muted">
         Budget spread across the group
       </p>
       <p className="mt-1 text-xs text-muted">
-        Individual amounts stay anonymous — this only shows the aggregate range.
+        Individual amounts stay anonymous. This only shows the aggregate range.
       </p>
       <div className="relative mt-6 h-2 rounded-full bg-border">
         <div

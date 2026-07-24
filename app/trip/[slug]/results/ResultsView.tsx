@@ -2,10 +2,24 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { participantStorageKey } from "@/lib/participant-storage";
 import { buildICS, downloadICS } from "@/lib/ics";
+import { buildAirbnbSearchUrl } from "@/lib/airbnb";
+import { buildFlightSearchUrl } from "@/lib/flights";
 import { VoiceInputButton } from "@/app/VoiceInputButton";
+import {
+  CheckCircleIcon,
+  CalendarIcon,
+  WarningIcon,
+  ThumbsUpIcon,
+  ThumbsDownIcon,
+  HouseIcon,
+  PlaneDepartureIcon,
+  StarIcon,
+} from "@/app/icons";
 import { MapView } from "./MapView";
+import { CostBreakdown } from "./CostBreakdown";
 import type { ItineraryOption, ReactionType } from "@/lib/types";
 
 interface ReactionRow {
@@ -28,6 +42,7 @@ export function ResultsView({
   lockedOptionIndex,
   regenerationFeedback,
   recommendedStartDate,
+  majorityDepartureLocation,
 }: {
   slug: string;
   outputId: string;
@@ -37,6 +52,7 @@ export function ResultsView({
   lockedOptionIndex: number | null;
   regenerationFeedback: string | null;
   recommendedStartDate: string | null;
+  majorityDepartureLocation: string | null;
 }) {
   const router = useRouter();
   const [participantId] = useState<string | null>(() =>
@@ -64,7 +80,7 @@ export function ResultsView({
         }
       })
       .catch(() => {
-        // Best-effort — the budget flag just won't show if this fails.
+        // Best-effort, the budget flag just won't show if this fails.
       });
   }, [slug, participantId]);
 
@@ -165,7 +181,7 @@ export function ResultsView({
         </p>
       )}
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {itineraryOptions.map((option, i) => {
           const optionCounts = counts[i] ?? { up: 0, down: 0 };
           const mine = myReaction(i);
@@ -175,126 +191,180 @@ export function ResultsView({
             option.estimated_cost_per_person !== undefined &&
             option.estimated_cost_currency === myBudget.budget_currency &&
             option.estimated_cost_per_person > myBudget.budget_amount;
+          const dayCount = option.days.length;
+          const airbnbUrl = buildAirbnbSearchUrl({
+            destination: option.destination,
+            startDateISO: recommendedStartDate,
+            dayCount,
+          });
+          const flightUrl = majorityDepartureLocation
+            ? buildFlightSearchUrl({
+                origin: majorityDepartureLocation,
+                destination: option.destination,
+                startDateISO: recommendedStartDate,
+                dayCount,
+              })
+            : null;
 
           return (
             <div
               key={i}
-              className={`rounded-xl border bg-surface p-5 ${
-                isThisLocked
-                  ? "border-green-400 dark:border-green-700"
-                  : "border-border"
+              className={`card grain deckle flex flex-col overflow-hidden ${
+                isThisLocked ? "!border-green-400 dark:!border-green-700" : ""
               } ${isThisLocked && justLocked ? "animate-lock-reveal" : ""}`}
             >
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-lg font-semibold">{option.label}</p>
-                {isThisLocked && (
-                  <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900 dark:text-green-200">
-                    ✅ Locked in
-                  </span>
-                )}
-              </div>
-
-              {option.estimated_cost_per_person !== undefined && (
-                <div className="mt-2">
-                  <p className="text-sm text-muted">
-                    Est. {option.estimated_cost_currency} {option.estimated_cost_per_person.toLocaleString()}{" "}
-                    per person
+              {option.photo_url && (
+                <div className="relative h-36 w-full">
+                  <Image src={option.photo_url} alt="" fill className="object-cover" unoptimized />
+                </div>
+              )}
+              <div className="p-5">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="flex items-center gap-1.5 font-display text-lg font-semibold">
+                    {i === 0 && <StarIcon size={15} className="shrink-0 text-gold" />}
+                    {option.destination}
                   </p>
-                  {exceedsBudget && (
-                    <p className="mt-1 text-xs font-medium text-amber-700 dark:text-amber-400">
-                      ⚠️ This is above the budget you submitted ({myBudget.budget_currency}{" "}
-                      {myBudget.budget_amount.toLocaleString()})
-                    </p>
+                  {isThisLocked && (
+                    <span className="flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900 dark:text-green-200">
+                      <CheckCircleIcon size={13} />
+                      Locked in
+                    </span>
                   )}
                 </div>
-              )}
+                <p className="text-xs uppercase tracking-wide text-rust">{option.label}</p>
+                <p className="mt-2 text-sm text-muted">{option.destination_reasoning}</p>
 
-              <div className="mt-4 flex flex-col gap-4">
-                {option.days.map((day) => (
-                  <div key={day.day_number}>
-                    <p className="text-sm font-semibold text-muted">Day {day.day_number}</p>
-                    <ul className="mt-1 list-inside list-disc text-sm">
-                      {day.activities.map((activity, j) => (
-                        <li key={j}>{activity}</li>
-                      ))}
-                    </ul>
+                {option.estimated_cost_per_person !== undefined && (
+                  <div className="mt-3">
+                    <p className="text-sm font-medium text-foreground">
+                      Est. {option.estimated_cost_currency}{" "}
+                      {option.estimated_cost_per_person.toLocaleString()} per person
+                    </p>
+                    {option.cost_breakdown && (
+                      <CostBreakdown
+                        breakdown={option.cost_breakdown}
+                        currency={option.estimated_cost_currency ?? ""}
+                      />
+                    )}
+                    {exceedsBudget && (
+                      <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+                        <WarningIcon size={14} className="shrink-0" />
+                        This is above the budget you submitted ({myBudget.budget_currency}{" "}
+                        {myBudget.budget_amount.toLocaleString()})
+                      </p>
+                    )}
                   </div>
-                ))}
+                )}
+
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <a
+                    href={airbnbUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs"
+                  >
+                    <HouseIcon size={14} />
+                    Search stays on Airbnb
+                  </a>
+                  {flightUrl && (
+                    <a
+                      href={flightUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs"
+                    >
+                      <PlaneDepartureIcon size={14} />
+                      Search flights
+                    </a>
+                  )}
+                </div>
+
+                <div className="mt-4 flex flex-col gap-4">
+                  {option.days.map((day) => (
+                    <div key={day.day_number}>
+                      <p className="text-sm font-semibold text-muted">Day {day.day_number}</p>
+                      <ul className="mt-1 list-inside list-disc text-sm">
+                        {day.activities.map((activity, j) => (
+                          <li key={j}>{activity}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+
+                <MapView days={option.days} />
+
+                {isThisLocked && recommendedStartDate && (
+                  <button
+                    type="button"
+                    onClick={() => handleExport(option)}
+                    className="mt-4 flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm"
+                  >
+                    <CalendarIcon size={15} />
+                    Add to calendar (.ics)
+                  </button>
+                )}
+
+                {!isLocked && confirmingLockIndex === i && (
+                  <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950">
+                    <p className="text-amber-900 dark:text-amber-200">
+                      Lock this in as the group&apos;s final choice? This can&apos;t be undone.
+                    </p>
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleLock(i)}
+                        disabled={locking}
+                        className="btn-stamp bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground disabled:opacity-50"
+                      >
+                        {locking ? "Locking in..." : "Yes, lock it in"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmingLockIndex(null)}
+                        disabled={locking}
+                        className="rounded-full border border-border px-3 py-1.5 text-xs"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {!isLocked && confirmingLockIndex !== i && (
+                  <div className="mt-4 flex items-center gap-3 border-t border-border pt-4">
+                    <button
+                      type="button"
+                      onClick={() => handleReact(i, "up")}
+                      disabled={!participantId}
+                      className={`flex items-center gap-1 rounded-full border px-3 py-1.5 text-sm disabled:opacity-40 ${
+                        mine === "up" ? "border-accent bg-accent text-accent-foreground" : "border-border"
+                      }`}
+                    >
+                      <ThumbsUpIcon size={14} />
+                      {optionCounts.up}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleReact(i, "down")}
+                      disabled={!participantId}
+                      className={`flex items-center gap-1 rounded-full border px-3 py-1.5 text-sm disabled:opacity-40 ${
+                        mine === "down" ? "border-accent bg-accent text-accent-foreground" : "border-border"
+                      }`}
+                    >
+                      <ThumbsDownIcon size={14} />
+                      {optionCounts.down}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingLockIndex(i)}
+                      className="btn-stamp ml-auto bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground disabled:opacity-50"
+                    >
+                      Lock in this option
+                    </button>
+                  </div>
+                )}
               </div>
-
-              <MapView days={option.days} />
-
-              {isThisLocked && recommendedStartDate && (
-                <button
-                  type="button"
-                  onClick={() => handleExport(option)}
-                  className="mt-4 rounded-full border border-border px-3 py-1.5 text-sm"
-                >
-                  📅 Add to calendar (.ics)
-                </button>
-              )}
-
-              {!isLocked && confirmingLockIndex === i && (
-                <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950">
-                  <p className="text-amber-900 dark:text-amber-200">
-                    Lock this in as the group&apos;s final choice? This can&apos;t be undone.
-                  </p>
-                  <div className="mt-2 flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleLock(i)}
-                      disabled={locking}
-                      className="rounded-full bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground disabled:opacity-50"
-                    >
-                      {locking ? "Locking in..." : "Yes, lock it in"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setConfirmingLockIndex(null)}
-                      disabled={locking}
-                      className="rounded-full border border-border px-3 py-1.5 text-xs"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {!isLocked && confirmingLockIndex !== i && (
-                <div className="mt-4 flex items-center gap-4 border-t border-border pt-4">
-                  <button
-                    type="button"
-                    onClick={() => handleReact(i, "up")}
-                    disabled={!participantId}
-                    className={`rounded-full border px-3 py-1.5 text-sm disabled:opacity-40 ${
-                      mine === "up"
-                        ? "border-accent bg-accent text-accent-foreground"
-                        : "border-border"
-                    }`}
-                  >
-                    👍 {optionCounts.up}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleReact(i, "down")}
-                    disabled={!participantId}
-                    className={`rounded-full border px-3 py-1.5 text-sm disabled:opacity-40 ${
-                      mine === "down"
-                        ? "border-accent bg-accent text-accent-foreground"
-                        : "border-border"
-                    }`}
-                  >
-                    👎 {optionCounts.down}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setConfirmingLockIndex(i)}
-                    className="ml-auto rounded-full bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground disabled:opacity-50"
-                  >
-                    Lock in this option
-                  </button>
-                </div>
-              )}
             </div>
           );
         })}
@@ -305,7 +375,7 @@ export function ResultsView({
       )}
 
       {!isLocked && (
-        <div className="rounded-xl border border-border bg-surface p-5">
+        <div className="card grain p-5">
           <p className="text-sm font-semibold">Not quite right? Regenerate with feedback</p>
           <p className="mt-1 text-xs text-muted">
             e.g. &quot;more relaxing&quot;, &quot;cheaper&quot;, &quot;swap day 3 for something
@@ -332,7 +402,7 @@ export function ResultsView({
             type="button"
             onClick={handleRegenerate}
             disabled={regenerating}
-            className="mt-3 rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground disabled:opacity-50"
+            className="btn-stamp mt-3 bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground disabled:opacity-50"
           >
             {regenerating ? "Regenerating..." : "Regenerate itinerary"}
           </button>
@@ -341,7 +411,7 @@ export function ResultsView({
 
       {isLocked && (
         <p className="text-sm text-muted">
-          The group has locked in a final choice — voting and regeneration are closed.
+          The group has locked in a final choice. Voting and regeneration are closed.
         </p>
       )}
     </div>

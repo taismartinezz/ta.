@@ -112,7 +112,7 @@ export function GroupView({
   const canGenerate = submittedIds.size >= MIN_SUBMISSIONS_TO_GENERATE;
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-4">
+    <div className="card grain p-4">
       <p className="text-sm font-medium text-foreground">
         {participants.length} joined · {submittedIds.size} submitted
       </p>
@@ -152,7 +152,7 @@ export function GroupView({
           type="button"
           onClick={handleGenerate}
           disabled={!canGenerate || generating}
-          className="rounded-full bg-accent px-5 py-2.5 text-center text-sm font-medium text-accent-foreground disabled:opacity-50"
+          className="btn-stamp bg-accent px-5 py-2.5 text-center text-sm font-medium text-accent-foreground disabled:opacity-50"
         >
           {generating ? "Generating..." : "Generate itinerary options"}
         </button>

@@ -24,7 +24,7 @@ export function DateOverlapChart({ participants }: { participants: ParticipantDa
   const span = Math.max(max - min, 1);
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-5">
+    <div className="card grain p-5">
       <p className="text-xs font-semibold uppercase tracking-wide text-muted">
         Date availability overlap
       </p>

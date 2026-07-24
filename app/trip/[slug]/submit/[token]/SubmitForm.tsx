@@ -2,11 +2,28 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { participantStorageKey, editTokenStorageKey } from "@/lib/participant-storage";
-import { ACTIVITY_INTEREST_OPTIONS, ACTIVITY_INTEREST_EMOJI } from "@/lib/activity-options";
+import { ACTIVITY_INTEREST_OPTIONS, ACTIVITY_INTEREST_ICON } from "@/lib/activity-options";
 import { MIN_BUDGET_AMOUNT, MAX_BUDGET_AMOUNT } from "@/lib/constants";
 import { getAuthHeaders } from "@/lib/supabase/auth-header";
 import { VoiceInputButton } from "@/app/VoiceInputButton";
 import { DateRangePicker } from "@/app/DateRangePicker";
+import {
+  MoneyBagIcon,
+  PlaneIcon,
+  CalendarIcon,
+  StarIcon,
+  CompassIcon,
+  ChecklistIcon,
+  NoEntryIcon,
+  TicketIcon,
+  ForkKnifeIcon,
+  GlobeIcon,
+  MountainIcon,
+  MoonIcon,
+  GaugeIcon,
+  WaveIcon,
+  CheckCircleIcon,
+} from "@/app/icons";
 import type { ActivityLevel, InterestLevel, PacePreference, Submission, TripStatus } from "@/lib/types";
 
 interface ReusableSubmission {
@@ -23,22 +40,22 @@ interface ReusableSubmission {
   pace_preference: PacePreference | null;
 }
 
-const INTEREST_LEVELS: { value: InterestLevel; label: string; emoji: string }[] = [
-  { value: "low", label: "Not really", emoji: "😌" },
-  { value: "medium", label: "Somewhat", emoji: "🙂" },
-  { value: "high", label: "Very!", emoji: "🤩" },
+const INTEREST_LEVELS: { value: InterestLevel; label: string }[] = [
+  { value: "low", label: "Not really" },
+  { value: "medium", label: "Somewhat" },
+  { value: "high", label: "Very!" },
 ];
 
-const NIGHTLIFE_LEVELS: { value: InterestLevel; label: string; emoji: string }[] = [
-  { value: "low", label: "Early to bed", emoji: "😴" },
-  { value: "medium", label: "A drink or two", emoji: "🍸" },
-  { value: "high", label: "Dance till close", emoji: "🕺" },
+const NIGHTLIFE_LEVELS: { value: InterestLevel; label: string }[] = [
+  { value: "low", label: "Early to bed" },
+  { value: "medium", label: "A drink or two" },
+  { value: "high", label: "Dance till close" },
 ];
 
-const PACE_PREFERENCES: { value: PacePreference; label: string; emoji: string }[] = [
-  { value: "relaxed", label: "Relaxed", emoji: "🐢" },
-  { value: "balanced", label: "Balanced", emoji: "⚖️" },
-  { value: "packed", label: "Packed", emoji: "🐇" },
+const PACE_PREFERENCES: { value: PacePreference; label: string }[] = [
+  { value: "relaxed", label: "Relaxed" },
+  { value: "balanced", label: "Balanced" },
+  { value: "packed", label: "Packed" },
 ];
 
 interface DateRangeInput {
@@ -51,10 +68,10 @@ interface OutlierCheckResponse {
   group_median: number | null;
 }
 
-const ACTIVITY_LEVELS: { value: ActivityLevel; label: string; emoji: string }[] = [
-  { value: "relaxing", label: "Relaxing", emoji: "🧘" },
-  { value: "balanced", label: "Balanced", emoji: "⚖️" },
-  { value: "adventurous", label: "Adventurous", emoji: "🔥" },
+const ACTIVITY_LEVELS: { value: ActivityLevel; label: string; Icon: typeof MountainIcon }[] = [
+  { value: "relaxing", label: "Relaxing", Icon: MoonIcon },
+  { value: "balanced", label: "Balanced", Icon: GaugeIcon },
+  { value: "adventurous", label: "Adventurous", Icon: MountainIcon },
 ];
 
 function parseTags(value: string): string[] {
@@ -69,6 +86,15 @@ function toDateRangeInputs(dates: Submission["available_dates"] | undefined): Da
     return [{ start: "", end: "" }];
   }
   return dates.map((d) => ({ start: d.start, end: d.end }));
+}
+
+function SectionLegend({ icon: Icon, children }: { icon: typeof MoneyBagIcon; children: React.ReactNode }) {
+  return (
+    <legend className="flex items-center gap-2 text-sm font-semibold">
+      <Icon size={17} className="text-rust" />
+      {children}
+    </legend>
+  );
 }
 
 export function SubmitForm({
@@ -151,7 +177,7 @@ export function SubmitForm({
         }
       })
       .catch(() => {
-        // Best-effort — voting identity sync isn't required for this page to work.
+        // Best-effort: voting identity sync isn't required for this page to work.
       });
   }, [slug, token]);
 
@@ -164,7 +190,7 @@ export function SubmitForm({
         }
       })
       .catch(() => {
-        // Best-effort — the banner just won't show if this fails.
+        // Best-effort: the banner just won't show if this fails.
       });
   }, [slug, initialSubmission?.participant_id]);
 
@@ -180,7 +206,7 @@ export function SubmitForm({
           }
         })
         .catch(() => {
-          // Best-effort — the prefill button just won't show if this fails.
+          // Best-effort: the prefill button just won't show if this fails.
         });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -245,7 +271,7 @@ export function SubmitForm({
         setBudgetAtFirstFlag((prev) => prev ?? amount);
       }
     } catch {
-      // Outlier check is a soft UX nicety — never blocks submission if it fails.
+      // Outlier check is a soft UX nicety, it never blocks submission if it fails.
     }
   }
 
@@ -332,9 +358,10 @@ export function SubmitForm({
 
   if (submitted) {
     return (
-      <div className="mt-8 rounded-xl border border-border bg-surface p-6 text-center">
-        <p className="text-lg font-medium text-foreground">
-          🎉 Thanks — your preferences are saved.
+      <div className="card grain deckle mt-8 p-6 text-center">
+        <p className="flex items-center justify-center gap-2 text-lg font-medium text-foreground">
+          <CheckCircleIcon size={22} className="text-accent" />
+          Thanks, your preferences are saved.
         </p>
         <p className="mt-2 text-sm text-muted">
           Bookmark this page if you want to come back and edit your answers later.
@@ -349,13 +376,14 @@ export function SubmitForm({
   return (
     <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-8 text-foreground">
       {wasNudged && (
-        <div className="rounded-lg border border-blue-300 bg-blue-50 p-3 text-sm text-blue-900 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200">
-          👋 Your group is waiting on you to submit your preferences!
+        <div className="flex items-center gap-2 rounded-xl border border-sky bg-sky/10 p-3 text-sm text-foreground">
+          <WaveIcon size={18} className="shrink-0 text-sky" />
+          Your group is waiting on you to submit your preferences!
         </div>
       )}
 
       {reusableSubmission && !prefilled && (
-        <div className="rounded-lg border border-border bg-surface p-3 text-sm">
+        <div className="card grain p-3 text-sm">
           <p className="text-muted">
             You&apos;re logged in and have preferences from a previous trip.
           </p>
@@ -370,7 +398,7 @@ export function SubmitForm({
       )}
 
       <fieldset className="flex flex-col gap-3">
-        <legend className="text-sm font-semibold">💰 Budget</legend>
+        <SectionLegend icon={MoneyBagIcon}>Budget</SectionLegend>
         <div className="flex gap-3">
           <input
             type="number"
@@ -393,11 +421,11 @@ export function SubmitForm({
           </select>
         </div>
         {outlierResult?.is_outlier && (
-          <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950">
+          <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950">
             <p className="text-amber-900 dark:text-amber-200">
               Your budget looks noticeably lower than what others in the group have
               entered so far (group median ~{outlierResult.group_median} {budgetCurrency}).
-              This is only visible to you — feel free to adjust the amount above.
+              This is only visible to you. Feel free to adjust the amount above.
             </p>
             <label className="mt-2 flex items-center gap-2 text-amber-900 dark:text-amber-200">
               <input
@@ -405,14 +433,14 @@ export function SubmitForm({
                 checked={shareAnonymously}
                 onChange={(e) => setShareAnonymously(e.target.checked)}
               />
-              Flag this to the group anonymously (optional — no one will know it&apos;s you)
+              Flag this to the group anonymously (optional, no one will know it&apos;s you)
             </label>
           </div>
         )}
       </fieldset>
 
       <fieldset className="flex flex-col gap-3">
-        <legend className="text-sm font-semibold">✈️ Where are you flying from?</legend>
+        <SectionLegend icon={PlaneIcon}>Where are you flying from?</SectionLegend>
         <input
           type="text"
           value={departureLocation}
@@ -426,7 +454,7 @@ export function SubmitForm({
       </fieldset>
 
       <fieldset className="flex flex-col gap-3">
-        <legend className="text-sm font-semibold">📅 When are you free?</legend>
+        <SectionLegend icon={CalendarIcon}>When are you free?</SectionLegend>
         {dateRanges.map((range, index) => (
           <div key={index} className="flex items-center gap-3">
             <div className="w-full">
@@ -453,7 +481,7 @@ export function SubmitForm({
       </fieldset>
 
       <fieldset className="flex flex-col gap-3">
-        <legend className="text-sm font-semibold">🗓️ How many days should the trip be?</legend>
+        <SectionLegend icon={CalendarIcon}>How many days should the trip be?</SectionLegend>
         <input
           type="number"
           min={1}
@@ -470,47 +498,52 @@ export function SubmitForm({
       </fieldset>
 
       <fieldset className="flex flex-col gap-3">
-        <legend className="text-sm font-semibold">✨ What&apos;s your vibe?</legend>
+        <SectionLegend icon={StarIcon}>What&apos;s your vibe?</SectionLegend>
         <div className="flex gap-2">
-          {ACTIVITY_LEVELS.map((level) => (
+          {ACTIVITY_LEVELS.map(({ value, label, Icon }) => (
             <button
-              key={level.value}
+              key={value}
               type="button"
-              onClick={() => setActivityLevel(level.value)}
-              className={`rounded-full px-4 py-2 text-sm ${
-                activityLevel === level.value
+              onClick={() => setActivityLevel(value)}
+              className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm ${
+                activityLevel === value
                   ? "bg-accent text-accent-foreground"
                   : "border border-border"
               }`}
             >
-              {level.emoji} {level.label}
+              <Icon size={15} />
+              {label}
             </button>
           ))}
         </div>
       </fieldset>
 
       <fieldset className="flex flex-col gap-3">
-        <legend className="text-sm font-semibold">🙌 What are you into?</legend>
+        <SectionLegend icon={CompassIcon}>What are you into?</SectionLegend>
         <div className="flex flex-wrap gap-2">
-          {ACTIVITY_INTEREST_OPTIONS.map((option) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => toggleActivityInterest(option)}
-              className={`rounded-full px-3 py-1.5 text-sm capitalize ${
-                activityInterests.includes(option)
-                  ? "bg-accent text-accent-foreground"
-                  : "border border-border"
-              }`}
-            >
-              {ACTIVITY_INTEREST_EMOJI[option]} {option}
-            </button>
-          ))}
+          {ACTIVITY_INTEREST_OPTIONS.map((option) => {
+            const Icon = ACTIVITY_INTEREST_ICON[option];
+            return (
+              <button
+                key={option}
+                type="button"
+                onClick={() => toggleActivityInterest(option)}
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm capitalize ${
+                  activityInterests.includes(option)
+                    ? "bg-accent text-accent-foreground"
+                    : "border border-border"
+                }`}
+              >
+                <Icon size={15} />
+                {option}
+              </button>
+            );
+          })}
         </div>
       </fieldset>
 
       <fieldset className="flex flex-col gap-3">
-        <legend className="text-sm font-semibold">🙏 Any must-haves?</legend>
+        <SectionLegend icon={ChecklistIcon}>Any must-haves?</SectionLegend>
         <div className="flex items-center gap-2">
           <input
             type="text"
@@ -529,7 +562,7 @@ export function SubmitForm({
       </fieldset>
 
       <fieldset className="flex flex-col gap-3">
-        <legend className="text-sm font-semibold">🚫 Any dealbreakers?</legend>
+        <SectionLegend icon={NoEntryIcon}>Any dealbreakers?</SectionLegend>
         <div className="flex items-center gap-2">
           <input
             type="text"
@@ -551,15 +584,19 @@ export function SubmitForm({
         <button
           type="button"
           onClick={() => setShowMorePreferences((v) => !v)}
-          className="self-start text-sm text-accent underline"
+          className="flex items-center gap-1.5 self-start text-sm text-accent underline"
         >
-          {showMorePreferences ? "Hide bonus round" : "🎉 Bonus round (optional, takes 20 seconds)"}
+          <TicketIcon size={16} />
+          {showMorePreferences ? "Hide bonus round" : "Bonus round (optional, takes 20 seconds)"}
         </button>
 
         {showMorePreferences && (
-          <div className="flex flex-col gap-6 rounded-xl border border-border bg-surface p-4">
+          <div className="card grain flex flex-col gap-6 p-4">
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-semibold">🍽️ Favorite cuisines</label>
+              <label className="flex items-center gap-2 text-sm font-semibold">
+                <ForkKnifeIcon size={16} className="text-rust" />
+                Favorite cuisines
+              </label>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
@@ -577,7 +614,10 @@ export function SubmitForm({
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-semibold">🗣️ Languages spoken</label>
+              <label className="flex items-center gap-2 text-sm font-semibold">
+                <GlobeIcon size={16} className="text-rust" />
+                Languages spoken
+              </label>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
@@ -595,7 +635,10 @@ export function SubmitForm({
             </div>
 
             <div className="flex flex-col gap-2">
-              <p className="text-sm font-semibold">🪂 Down for a once-in-a-lifetime activity?</p>
+              <p className="flex items-center gap-2 text-sm font-semibold">
+                <MountainIcon size={16} className="text-rust" />
+                Down for a once-in-a-lifetime activity?
+              </p>
               <div className="flex gap-2">
                 {INTEREST_LEVELS.map((level) => (
                   <button
@@ -608,14 +651,17 @@ export function SubmitForm({
                         : "border border-border"
                     }`}
                   >
-                    {level.emoji} {level.label}
+                    {level.label}
                   </button>
                 ))}
               </div>
             </div>
 
             <div className="flex flex-col gap-2">
-              <p className="text-sm font-semibold">🌙 Nightlife energy?</p>
+              <p className="flex items-center gap-2 text-sm font-semibold">
+                <MoonIcon size={16} className="text-rust" />
+                Nightlife energy?
+              </p>
               <div className="flex gap-2">
                 {NIGHTLIFE_LEVELS.map((level) => (
                   <button
@@ -628,14 +674,17 @@ export function SubmitForm({
                         : "border border-border"
                     }`}
                   >
-                    {level.emoji} {level.label}
+                    {level.label}
                   </button>
                 ))}
               </div>
             </div>
 
             <div className="flex flex-col gap-2">
-              <p className="text-sm font-semibold">🏃 Preferred pace?</p>
+              <p className="flex items-center gap-2 text-sm font-semibold">
+                <GaugeIcon size={16} className="text-rust" />
+                Preferred pace?
+              </p>
               <div className="flex gap-2">
                 {PACE_PREFERENCES.map((pace) => (
                   <button
@@ -648,7 +697,7 @@ export function SubmitForm({
                         : "border border-border"
                     }`}
                   >
-                    {pace.emoji} {pace.label}
+                    {pace.label}
                   </button>
                 ))}
               </div>
@@ -659,20 +708,23 @@ export function SubmitForm({
 
       {tripStatus !== "collecting" && (
         <p className="text-xs text-amber-700 dark:text-amber-400">
-          Note: an itinerary already exists for this trip — saving here won&apos;t update it
+          Note: an itinerary already exists for this trip. Saving here won&apos;t update it
           automatically.
         </p>
       )}
 
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
       {justSaved && (
-        <p className="text-sm text-green-600 dark:text-green-400">✓ Saved</p>
+        <p className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">
+          <CheckCircleIcon size={16} />
+          Saved
+        </p>
       )}
 
       <button
         type="submit"
         disabled={loading}
-        className="rounded-full bg-accent px-5 py-3 text-sm font-medium text-accent-foreground disabled:opacity-50"
+        className="btn-stamp bg-accent px-5 py-3 text-sm font-medium text-accent-foreground disabled:opacity-50"
       >
         {loading ? "Saving..." : isEditMode ? "Save changes" : "Submit my preferences"}
       </button>

@@ -70,10 +70,22 @@ export interface ItineraryDay {
   locations?: GeocodedLocation[];
 }
 
+export interface CostBreakdown {
+  lodging: number;
+  food: number;
+  activities: number;
+  local_transport: number;
+  flights: number;
+}
+
 export interface ItineraryOption {
+  destination: string;
+  destination_reasoning: string;
+  photo_url?: string | null;
   label: string;
   estimated_cost_per_person?: number;
   estimated_cost_currency?: string;
+  cost_breakdown?: CostBreakdown;
   days: ItineraryDay[];
 }
 

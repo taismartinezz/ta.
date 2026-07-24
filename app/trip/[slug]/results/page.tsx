@@ -2,11 +2,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { buildAirbnbSearchUrl } from "@/lib/airbnb";
+import { majorityDepartureLocation } from "@/lib/flights";
 import type { ItineraryOption } from "@/lib/types";
+import { ArrowLeftIcon } from "@/app/icons";
 import { ResultsView } from "./ResultsView";
 import { DateOverlapChart } from "./DateOverlapChart";
 import { BudgetOverlapChart } from "./BudgetOverlapChart";
+import { ComparatorTable } from "./ComparatorTable";
 import { RecommendationsSection } from "./RecommendationsSection";
 
 export default async function ResultsPage({
@@ -30,7 +32,7 @@ export default async function ResultsPage({
   const { data: output } = await supabase
     .from("generated_outputs")
     .select(
-      "id, destination_pick, itinerary_options, open_questions, raw_llm_response, locked_option_index, regeneration_feedback, recommended_start_date"
+      "id, itinerary_options, open_questions, locked_option_index, regeneration_feedback, recommended_start_date"
     )
     .eq("trip_id", trip.id)
     .order("created_at", { ascending: false })
@@ -41,7 +43,8 @@ export default async function ResultsPage({
     return (
       <div className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center gap-4 px-6 py-16 text-center text-foreground">
         <p className="text-lg font-medium">No itinerary has been generated for this trip yet.</p>
-        <Link href={`/trip/${slug}`} className="text-sm text-accent underline">
+        <Link href={`/trip/${slug}`} className="flex items-center gap-1 text-sm text-accent underline">
+          <ArrowLeftIcon size={14} />
           Back to the group view
         </Link>
       </div>
@@ -57,7 +60,7 @@ export default async function ResultsPage({
       supabase.from("participants").select("id, name").eq("trip_id", trip.id),
       supabase
         .from("submissions")
-        .select("participant_id, available_dates, budget_amount, budget_currency")
+        .select("participant_id, available_dates, budget_amount, budget_currency, departure_location")
         .eq("trip_id", trip.id),
       supabase
         .from("trip_recommendations")
@@ -65,29 +68,8 @@ export default async function ResultsPage({
         .eq("trip_id", trip.id),
     ]);
 
-  let destinationReasoning: string | null = null;
-  try {
-    const rawText = (output.raw_llm_response as { text?: string } | null)?.text;
-    if (rawText) {
-      const parsed = JSON.parse(rawText);
-      if (typeof parsed.destination_reasoning === "string") {
-        destinationReasoning = parsed.destination_reasoning;
-      }
-    }
-  } catch {
-    destinationReasoning = null;
-  }
-
   const itineraryOptions = (output.itinerary_options ?? []) as ItineraryOption[];
   const openQuestions = (output.open_questions ?? []) as string[];
-  const dayCount = itineraryOptions[0]?.days.length ?? 0;
-  const airbnbUrl = output.destination_pick
-    ? buildAirbnbSearchUrl({
-        destination: output.destination_pick,
-        startDateISO: output.recommended_start_date,
-        dayCount,
-      })
-    : null;
 
   const nameByParticipantId = new Map((participants ?? []).map((p) => [p.id, p.name]));
   const dateParticipants = (submissions ?? [])
@@ -98,6 +80,9 @@ export default async function ResultsPage({
     }));
   const budgetAmounts = (submissions ?? []).map((s) => Number(s.budget_amount));
   const primaryCurrency = (submissions ?? [])[0]?.budget_currency ?? "USD";
+  const majorityDeparture = majorityDepartureLocation(
+    (submissions ?? []).map((s) => s.departure_location)
+  );
   const recommendationRows = (recommendations ?? []).map((r) => ({
     id: r.id,
     place_name: r.place_name,
@@ -106,46 +91,22 @@ export default async function ResultsPage({
   }));
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-4xl flex-col gap-8 px-6 py-16 text-foreground">
+    <div className="mx-auto flex min-h-screen max-w-5xl flex-col gap-8 px-6 py-16 text-foreground">
       <div>
-        <Link href={`/trip/${slug}`} className="text-sm text-accent underline">
-          ← Back to the group view
+        <Link href={`/trip/${slug}`} className="flex items-center gap-1 text-sm text-accent underline">
+          <ArrowLeftIcon size={14} />
+          Back to the group view
         </Link>
         <h1 className="mt-4 text-2xl font-semibold">{trip.organizer_name}&apos;s trip plan</h1>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-border bg-surface">
-        {trip.cover_image_url && (
-          <div className="relative h-48 w-full bg-accent-soft">
-            <Image
-              src={trip.cover_image_url}
-              alt=""
-              fill
-              className="object-cover"
-              unoptimized
-            />
-          </div>
-        )}
-        <div className="p-5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-            Destination pick
-          </p>
-          <p className="mt-2 text-xl font-semibold">{output.destination_pick}</p>
-          {destinationReasoning && (
-            <p className="mt-2 text-sm text-muted">{destinationReasoning}</p>
-          )}
-          {airbnbUrl && (
-            <a
-              href={airbnbUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-3 inline-block rounded-full border border-border px-3 py-1.5 text-sm"
-            >
-              🏠 Search stays on Airbnb ↗
-            </a>
-          )}
+      {trip.cover_image_url && (
+        <div className="card grain deckle relative h-48 w-full overflow-hidden">
+          <Image src={trip.cover_image_url} alt="" fill className="object-cover" unoptimized />
         </div>
-      </div>
+      )}
+
+      <ComparatorTable options={itineraryOptions} />
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <DateOverlapChart participants={dateParticipants} />
@@ -154,7 +115,7 @@ export default async function ResultsPage({
 
       <div>
         <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-          Itinerary options
+          Your three options
         </p>
         <div className="mt-3">
           <ResultsView
@@ -166,6 +127,7 @@ export default async function ResultsPage({
             lockedOptionIndex={output.locked_option_index}
             regenerationFeedback={output.regeneration_feedback}
             recommendedStartDate={output.recommended_start_date}
+            majorityDepartureLocation={majorityDeparture}
           />
         </div>
       </div>

@@ -74,26 +74,32 @@ export async function POST(
     );
   }
 
-  // Geocode once here (not per page view) — cheap relative to the LLM call,
+  // Geocode once here (not per page view), cheap relative to the LLM call,
   // and keeps us well within Nominatim's usage policy. Runs alongside the
-  // Wikipedia photo lookup since neither depends on the other.
+  // Wikipedia photo lookups since none of them depend on each other.
   const allPlaceNames = plan.itinerary_options.flatMap((option) =>
     option.days.flatMap((day) => day.locations ?? [])
   );
 
-  const [geocoded, coverImageUrl] = await Promise.all([
+  const [geocoded, ...photoUrls] = await Promise.all([
     allPlaceNames.length > 0 ? geocodePlaceNames(allPlaceNames) : Promise.resolve(new Map()),
-    fetchWikipediaImage(plan.destination_photo_query || plan.destination_pick),
+    ...plan.itinerary_options.map((option) =>
+      fetchWikipediaImage(option.destination_photo_query || option.destination)
+    ),
   ]);
 
-  if (coverImageUrl) {
-    await supabase.from("trips").update({ cover_image_url: coverImageUrl }).eq("id", trip.id);
+  if (photoUrls[0]) {
+    await supabase.from("trips").update({ cover_image_url: photoUrls[0] }).eq("id", trip.id);
   }
 
-  const itineraryOptionsWithGeo: ItineraryOption[] = plan.itinerary_options.map((option) => ({
+  const itineraryOptionsWithGeo: ItineraryOption[] = plan.itinerary_options.map((option, i) => ({
+    destination: option.destination,
+    destination_reasoning: option.destination_reasoning,
+    photo_url: photoUrls[i] ?? null,
     label: option.label,
     estimated_cost_per_person: option.estimated_cost_per_person,
     estimated_cost_currency: option.estimated_cost_currency,
+    cost_breakdown: option.cost_breakdown,
     days: option.days.map((day) => ({
       day_number: day.day_number,
       activities: day.activities,
@@ -108,7 +114,7 @@ export async function POST(
     .insert({
       trip_id: trip.id,
       raw_llm_response: raw,
-      destination_pick: plan.destination_pick,
+      destination_pick: plan.itinerary_options[0]?.destination ?? null,
       itinerary_options: itineraryOptionsWithGeo,
       open_questions: plan.open_questions,
       regeneration_feedback: feedback,

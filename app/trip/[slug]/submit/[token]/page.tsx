@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { Submission, TripStatus } from "@/lib/types";
+import { LockIcon } from "@/app/icons";
 import { SubmitForm } from "./SubmitForm";
 
 export default async function SubmitPage({
@@ -46,14 +47,17 @@ export default async function SubmitPage({
       <p className="mt-2 text-sm text-muted">
         Only you can see these until the group itinerary is generated.
       </p>
-      <div className="mt-3 rounded-lg border border-rose-300 bg-rose-50 p-3 text-sm text-rose-900 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-200">
-        🔒 This link is private to you — it&apos;s how you&apos;ll come back to edit your own
-        answers. Don&apos;t share it with the group; use the invite link on the trip&apos;s group
-        page instead.
+      <div className="mt-3 flex items-start gap-2 rounded-xl border border-rose-300 bg-rose-50 p-3 text-sm text-rose-900 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-200">
+        <LockIcon size={17} className="mt-0.5 shrink-0" />
+        <span>
+          This link is private to you. It&apos;s how you&apos;ll come back to edit your own
+          answers. Don&apos;t share it with the group; use the invite link on the trip&apos;s group
+          page instead.
+        </span>
       </div>
       {submission && (
         <p className="mt-1 text-xs text-muted">
-          Last updated {new Date(submission.updated_at).toLocaleString()} — bookmark this
+          Last updated {new Date(submission.updated_at).toLocaleString()}. Bookmark this
           page to come back and edit later.
         </p>
       )}

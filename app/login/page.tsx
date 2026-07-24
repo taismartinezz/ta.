@@ -67,12 +67,12 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6">
-      <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-8">
+      <div className="card grain deckle w-full max-w-md p-8">
         <h1 className="text-2xl font-semibold text-foreground">
           {mode === "login" ? "Log in" : "Create an account"}
         </h1>
         <p className="mt-2 text-sm text-muted">
-          Optional — logging in lets you see a history of trips you&apos;ve created or joined,
+          Optional. Logging in lets you see a history of trips you&apos;ve created or joined,
           and reuse your preferences on future trips. You don&apos;t need an account to plan a
           trip via a shared link.
         </p>
@@ -108,7 +108,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="mt-2 rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground disabled:opacity-50"
+                className="btn-stamp mt-2 bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground disabled:opacity-50"
               >
                 {loading
                   ? mode === "login"

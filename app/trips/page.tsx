@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createAuthServerClient } from "@/lib/supabase/auth-server";
 import { createClient } from "@/lib/supabase/server";
 import { CATEGORICAL_SLOT_CLASSES } from "@/lib/chart-colors";
+import { SuitcaseIcon } from "@/app/icons";
 import type { Trip, TripStatus } from "@/lib/types";
 
 const STATUS_LABEL: Record<TripStatus, string> = {
@@ -136,8 +137,8 @@ export default async function TripsHistoryPage() {
                       unoptimized
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-3xl">
-                      🧳
+                    <div className="flex h-full w-full items-center justify-center">
+                      <SuitcaseIcon size={32} className="text-muted" />
                     </div>
                   )}
                   <span className="absolute right-2 top-2 rounded-full bg-black/70 px-2 py-0.5 text-xs font-medium text-white">

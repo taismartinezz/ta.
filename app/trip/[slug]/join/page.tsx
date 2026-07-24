@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { ArrowLeftIcon } from "@/app/icons";
 import { JoinForm } from "./JoinForm";
 
 export default async function JoinPage({
@@ -23,8 +24,9 @@ export default async function JoinPage({
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-16">
-      <Link href={`/trip/${slug}`} className="text-sm text-accent underline">
-        ← Back to the group view
+      <Link href={`/trip/${slug}`} className="flex items-center gap-1 text-sm text-accent underline">
+        <ArrowLeftIcon size={14} />
+        Back to the group view
       </Link>
       <h1 className="mt-4 text-2xl font-semibold text-foreground">
         Join {trip.organizer_name}&apos;s trip

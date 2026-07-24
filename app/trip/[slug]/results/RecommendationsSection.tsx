@@ -73,7 +73,7 @@ export function RecommendationsSection({
   }
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-5">
+    <div className="card grain p-5">
       <p className="text-xs font-semibold uppercase tracking-wide text-muted">
         Recommendations from the group
       </p>
@@ -86,7 +86,7 @@ export function RecommendationsSection({
           {recommendations.map((r) => (
             <li key={r.id} className="text-sm">
               <span className="font-medium">{r.place_name}</span>
-              {r.note && <span className="text-muted"> — {r.note}</span>}
+              {r.note && <span className="text-muted"> ({r.note})</span>}
               <p className="text-xs text-muted">Recommended by {r.participant_name}</p>
             </li>
           ))}
@@ -118,7 +118,7 @@ export function RecommendationsSection({
           type="button"
           onClick={handleSubmit}
           disabled={loading}
-          className="self-start rounded-full bg-accent px-4 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
+          className="btn-stamp self-start bg-accent px-4 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
         >
           {loading ? "Adding..." : "Add recommendation"}
         </button>

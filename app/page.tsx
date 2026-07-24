@@ -42,7 +42,7 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6">
-      <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-8">
+      <div className="card grain deckle w-full max-w-md p-8">
         <h1 className="text-2xl font-semibold text-foreground">
           Plan a trip with your friends
         </h1>
@@ -65,7 +65,7 @@ export default function Home() {
           <button
             type="submit"
             disabled={loading}
-            className="mt-2 rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground disabled:opacity-50"
+            className="btn-stamp mt-2 bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground disabled:opacity-50"
           >
             {loading ? "Creating..." : "Create trip"}
           </button>

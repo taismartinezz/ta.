@@ -43,7 +43,7 @@ export function JoinForm({ slug }: { slug: string }) {
         }
       })
       .catch(() => {
-        // Best-effort — if this fails, just fall through to the normal join form.
+        // Best-effort: if this fails, just fall through to the normal join form.
       })
       .finally(() => setCheckingExisting(false));
   }, [slug]);
@@ -99,18 +99,18 @@ export function JoinForm({ slug }: { slug: string }) {
   if (existingJoin && !joinAsNew) {
     return (
       <div className="mt-6 flex flex-col gap-3">
-        <div className="rounded-lg border border-border bg-surface p-3 text-sm">
+        <div className="card grain p-3 text-sm">
           Looks like you already joined this trip as <strong>{existingJoin.name}</strong>.
         </div>
         <button
           type="button"
           onClick={() => router.push(`/trip/${slug}/submit/${existingJoin.editToken}`)}
-          className="rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground"
+          className="btn-stamp bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground"
         >
           Continue to my preferences
         </button>
         <button type="button" onClick={() => setJoinAsNew(true)} className="text-sm text-accent underline">
-          This isn&apos;t me — join as someone else on this device
+          This isn&apos;t me, join as someone else on this device
         </button>
       </div>
     );
@@ -119,15 +119,15 @@ export function JoinForm({ slug }: { slug: string }) {
   if (pendingDuplicate) {
     return (
       <div className="mt-6 flex flex-col gap-3">
-        <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+        <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
           There&apos;s already someone named &quot;{name.trim()}&quot; on this trip. If that&apos;s
           you and you already submitted preferences, use the edit link you saved instead of
-          joining again — otherwise, continue below to join as a separate person.
+          joining again. Otherwise, continue below to join as a separate person.
         </div>
         <button
           type="button"
           onClick={() => proceedToSubmit(pendingDuplicate)}
-          className="rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground"
+          className="btn-stamp bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground"
         >
           Continue anyway
         </button>
@@ -168,7 +168,7 @@ export function JoinForm({ slug }: { slug: string }) {
       <button
         type="submit"
         disabled={loading}
-        className="mt-2 rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground disabled:opacity-50"
+        className="btn-stamp mt-2 bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground disabled:opacity-50"
       >
         {loading ? "Joining..." : "Continue"}
       </button>
