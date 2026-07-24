@@ -29,6 +29,16 @@ export function ArrowLeftIcon(props: IconProps) {
   );
 }
 
+export function SunburstIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v3M12 19v3M22 12h-3M5 12H2" />
+      <path d="M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1M18.4 18.4l-2.1-2.1M7.7 7.7 5.6 5.6" />
+    </svg>
+  );
+}
+
 export function CompassIcon(props: IconProps) {
   return (
     <svg {...base(props)}>

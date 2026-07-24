@@ -81,6 +81,7 @@ export interface CostBreakdown {
 export interface ItineraryOption {
   destination: string;
   destination_reasoning: string;
+  tagline?: string;
   photo_url?: string | null;
   label: string;
   estimated_cost_per_person?: number;

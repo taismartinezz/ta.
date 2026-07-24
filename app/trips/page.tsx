@@ -133,7 +133,7 @@ export default async function TripsHistoryPage() {
                       src={trip.cover_image_url}
                       alt=""
                       fill
-                      className="object-cover transition-transform group-hover:scale-105"
+                      className="photo-grade object-cover transition-transform group-hover:scale-105"
                       unoptimized
                     />
                   ) : (
@@ -141,7 +141,7 @@ export default async function TripsHistoryPage() {
                       <SuitcaseIcon size={32} className="text-muted" />
                     </div>
                   )}
-                  <span className="absolute right-2 top-2 rounded-full bg-black/70 px-2 py-0.5 text-xs font-medium text-white">
+                  <span className="badge-stamp absolute right-2 top-2 bg-black/70 text-xs font-medium text-white">
                     {STATUS_LABEL[trip.status]}
                   </span>
                 </div>

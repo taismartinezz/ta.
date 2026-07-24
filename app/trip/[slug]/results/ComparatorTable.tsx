@@ -1,5 +1,5 @@
 import type { ItineraryOption } from "@/lib/types";
-import { StarIcon } from "@/app/icons";
+import { SunburstIcon } from "@/app/icons";
 
 export function ComparatorTable({ options }: { options: ItineraryOption[] }) {
   if (options.length === 0) {
@@ -18,7 +18,7 @@ export function ComparatorTable({ options }: { options: ItineraryOption[] }) {
             {options.map((option, i) => (
               <th key={i} className="py-2 pr-4 font-medium">
                 <span className="flex items-center gap-1.5 font-display text-base normal-case text-foreground">
-                  {i === 0 && <StarIcon size={13} className="text-gold" />}
+                  {i === 0 && <SunburstIcon size={13} className="text-gold" />}
                   {option.destination}
                 </span>
               </th>
@@ -30,7 +30,9 @@ export function ComparatorTable({ options }: { options: ItineraryOption[] }) {
             <td className="py-2 pr-4 text-muted">Vibe</td>
             {options.map((option, i) => (
               <td key={i} className="py-2 pr-4">
-                {option.label}
+                <span className="badge-stamp bg-rust-soft text-xs font-medium text-rust">
+                  {option.label}
+                </span>
               </td>
             ))}
           </tr>

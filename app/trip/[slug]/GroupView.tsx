@@ -126,10 +126,12 @@ export function GroupView({
           >
             <span>{p.name}</span>
             {submittedIds.has(p.id) ? (
-              <span className="text-green-600 dark:text-green-400">Submitted</span>
+              <span className="badge-stamp bg-green-100 text-xs font-medium text-green-700 dark:bg-green-900 dark:text-green-300">
+                Submitted
+              </span>
             ) : (
               <span className="flex items-center gap-2">
-                <span className="text-muted">Waiting</span>
+                <span className="badge-stamp bg-surface text-xs text-muted">Waiting</span>
                 <button
                   type="button"
                   onClick={() => handleNudge(p.id)}

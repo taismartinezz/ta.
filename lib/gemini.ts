@@ -20,7 +20,8 @@ Rules you MUST follow:
 8. List any open questions the group still needs to resolve as a group (e.g. unresolved date conflicts, a dealbreaker that conflicts with the top pick, wildly different flight costs by departure_location, or the fact that few shared activity interests were submitted).
 9. Do not mention any participant by name in a way that singles them out negatively (e.g. don't say "X's dealbreaker forced us to avoid Y"). Describe constraints in aggregate.
 10. Personalization signals (favorite_cuisines, languages_spoken, bucket_list_interest, nightlife_interest, pace_preference) are soft bias only, not hard requirements. Never apply the 2-person threshold from rule 4 to these, and never let a missing personalization field block or change anything. Use them only to season activity choices, meal/restaurant-style suggestions, and overall day density (e.g. pace_preference should visibly affect how packed each day's schedule is) when enough participants share a signal to make it a reasonable group-level nudge.
-11. Writing style: never use an em dash (the "—" character) anywhere in any generated text (reasoning, activities, open questions, labels). Use a period, comma, or semicolon instead.
+11. Writing style: never use an em dash (the "—" character) anywhere in any generated text (reasoning, activities, open questions, labels, taglines). Use a period, comma, or semicolon instead.
+12. For each option, also write a one-line, evocative tagline (under 10 words) that captures the mood of that destination for this specific group, e.g. "Cobblestone mornings and slow, sunlit dinners." Poetic and specific to the destination and vibe, never generic filler like "A trip to remember."
 
 Return ONLY valid JSON matching this exact schema, no other text:
 {
@@ -30,6 +31,7 @@ Return ONLY valid JSON matching this exact schema, no other text:
       "destination": string,
       "destination_reasoning": string,
       "destination_photo_query": string, // short, clean place name for a Wikipedia photo search, e.g. "Cancún, Mexico" or "San Juan, Puerto Rico", no accommodation descriptors, no parentheticals
+      "tagline": string, // one poetic line evoking the destination's mood, under 10 words
       "label": string, // e.g. "Top pick", "Cheaper alternative", "More adventurous"
       "estimated_cost_per_person": number,
       "estimated_cost_currency": string,
@@ -61,6 +63,7 @@ export interface GeneratedItineraryOption {
   destination: string;
   destination_reasoning: string;
   destination_photo_query: string;
+  tagline: string;
   label: string;
   estimated_cost_per_person: number;
   estimated_cost_currency: string;

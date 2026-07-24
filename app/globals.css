@@ -94,6 +94,33 @@
   outline-offset: 3px;
 }
 
+/* A rounded, doorway-like top on an otherwise-rectangular photo, evoking an
+   arch you're looking through rather than a plain framed rectangle. */
+.arch-photo {
+  border-radius: 50% 50% 0 0 / 22% 22% 0 0;
+  overflow: hidden;
+}
+
+/* Warm, slightly desaturated golden-hour grade so real photos sit
+   comfortably next to the illustrated, hand-drawn accents around them
+   instead of reading as flat, neutral daylight snapshots. */
+.photo-grade {
+  filter: sepia(0.22) saturate(1.2) brightness(0.94) contrast(1.06) hue-rotate(-6deg);
+}
+
+/* A small stamp/sticker treatment for status labels: a dashed perforation
+   ring and a slight tilt, so it reads as stuck-on rather than a flat pill. */
+.badge-stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: 999px;
+  padding: 0.2rem 0.7rem;
+  outline: 1.5px dashed currentColor;
+  outline-offset: 2px;
+  transform: rotate(-2deg);
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -117,4 +144,19 @@ h1, h2, h3, .font-display {
 
 .animate-lock-reveal {
   animation: lock-reveal 0.5s ease-out;
+}
+
+@keyframes sunburst-in {
+  from {
+    opacity: 0;
+    transform: scale(0.4) rotate(-20deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.animate-sunburst-in {
+  animation: sunburst-in 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
 }

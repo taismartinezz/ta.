@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { majorityDepartureLocation } from "@/lib/flights";
 import type { ItineraryOption } from "@/lib/types";
-import { ArrowLeftIcon } from "@/app/icons";
+import { ArrowLeftIcon, SunburstIcon } from "@/app/icons";
 import { ResultsView } from "./ResultsView";
 import { DateOverlapChart } from "./DateOverlapChart";
 import { BudgetOverlapChart } from "./BudgetOverlapChart";
@@ -97,12 +97,28 @@ export default async function ResultsPage({
           <ArrowLeftIcon size={14} />
           Back to the group view
         </Link>
-        <h1 className="mt-4 text-2xl font-semibold">{trip.organizer_name}&apos;s trip plan</h1>
+        <h1 className="mt-4 flex items-center gap-2 text-2xl font-semibold">
+          {output.locked_option_index !== null && (
+            <SunburstIcon size={20} className="shrink-0 text-gold" />
+          )}
+          {output.locked_option_index !== null
+            ? `${trip.organizer_name}'s trip to ${itineraryOptions[output.locked_option_index]?.destination ?? ""}`
+            : `${trip.organizer_name}'s trip plan`}
+        </h1>
       </div>
 
       {trip.cover_image_url && (
-        <div className="card grain deckle relative h-48 w-full overflow-hidden">
-          <Image src={trip.cover_image_url} alt="" fill className="object-cover" unoptimized />
+        <div className="card grain deckle p-6">
+          <div className="arch-photo photo-grade relative mx-auto h-64 w-full max-w-2xl">
+            <Image src={trip.cover_image_url} alt="" fill className="object-cover" unoptimized />
+            {itineraryOptions[0]?.tagline && (
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent px-4 pb-3 pt-10">
+                <p className="text-center font-display text-lg italic text-white/95">
+                  &ldquo;{itineraryOptions[0].tagline}&rdquo;
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

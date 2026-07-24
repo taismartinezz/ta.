@@ -16,7 +16,7 @@ import {
   ThumbsDownIcon,
   HouseIcon,
   PlaneDepartureIcon,
-  StarIcon,
+  SunburstIcon,
 } from "@/app/icons";
 import { MapView } from "./MapView";
 import { CostBreakdown } from "./CostBreakdown";
@@ -214,24 +214,37 @@ export function ResultsView({
               } ${isThisLocked && justLocked ? "animate-lock-reveal" : ""}`}
             >
               {option.photo_url && (
-                <div className="relative h-36 w-full">
+                <div className="arch-photo photo-grade relative mx-5 mt-5 h-40 w-[calc(100%-2.5rem)]">
                   <Image src={option.photo_url} alt="" fill className="object-cover" unoptimized />
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent px-3 pb-2 pt-6">
+                    {option.tagline && (
+                      <p className="font-display text-sm italic text-white/95">
+                        &ldquo;{option.tagline}&rdquo;
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
               <div className="p-5">
                 <div className="flex items-center justify-between gap-2">
                   <p className="flex items-center gap-1.5 font-display text-lg font-semibold">
-                    {i === 0 && <StarIcon size={15} className="shrink-0 text-gold" />}
+                    {i === 0 && <SunburstIcon size={16} className="shrink-0 text-gold" />}
                     {option.destination}
                   </p>
                   {isThisLocked && (
-                    <span className="flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900 dark:text-green-200">
-                      <CheckCircleIcon size={13} />
+                    <span className="badge-stamp bg-green-100 text-xs font-medium text-green-800 dark:bg-green-900 dark:text-green-200">
+                      {justLocked ? (
+                        <SunburstIcon size={13} className="animate-sunburst-in" />
+                      ) : (
+                        <CheckCircleIcon size={13} />
+                      )}
                       Locked in
                     </span>
                   )}
                 </div>
-                <p className="text-xs uppercase tracking-wide text-rust">{option.label}</p>
+                <span className="badge-stamp mt-1.5 inline-flex bg-rust-soft text-xs font-medium text-rust">
+                  {option.label}
+                </span>
                 <p className="mt-2 text-sm text-muted">{option.destination_reasoning}</p>
 
                 {option.estimated_cost_per_person !== undefined && (

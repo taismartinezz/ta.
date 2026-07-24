@@ -95,6 +95,7 @@ export async function POST(
   const itineraryOptionsWithGeo: ItineraryOption[] = plan.itinerary_options.map((option, i) => ({
     destination: option.destination,
     destination_reasoning: option.destination_reasoning,
+    tagline: option.tagline,
     photo_url: photoUrls[i] ?? null,
     label: option.label,
     estimated_cost_per_person: option.estimated_cost_per_person,
