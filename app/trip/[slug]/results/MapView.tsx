@@ -89,7 +89,7 @@ export function MapView({ days }: { days: ItineraryDay[] }) {
   return (
     <div className="mt-4">
       <div ref={containerRef} className="h-64 w-full overflow-hidden rounded-lg" />
-      <p className="mt-1 text-[10px] text-zinc-400">Map data © OpenStreetMap contributors</p>
+      <p className="mt-1 text-[10px] text-muted">Map data © OpenStreetMap contributors</p>
     </div>
   );
 }

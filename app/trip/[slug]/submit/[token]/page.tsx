@@ -40,14 +40,19 @@ export default async function SubmitPage({
 
   return (
     <div className="mx-auto flex min-h-screen max-w-2xl flex-col px-6 py-16">
-      <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">
+      <h1 className="text-2xl font-semibold text-foreground">
         {submission ? "Edit your trip preferences" : "Your trip preferences"}
       </h1>
-      <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+      <p className="mt-2 text-sm text-muted">
         Only you can see these until the group itinerary is generated.
       </p>
+      <div className="mt-3 rounded-lg border border-rose-300 bg-rose-50 p-3 text-sm text-rose-900 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-200">
+        🔒 This link is private to you — it&apos;s how you&apos;ll come back to edit your own
+        answers. Don&apos;t share it with the group; use the invite link on the trip&apos;s group
+        page instead.
+      </div>
       {submission && (
-        <p className="mt-1 text-xs text-zinc-500">
+        <p className="mt-1 text-xs text-muted">
           Last updated {new Date(submission.updated_at).toLocaleString()} — bookmark this
           page to come back and edit later.
         </p>

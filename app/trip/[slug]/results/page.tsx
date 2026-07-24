@@ -39,9 +39,9 @@ export default async function ResultsPage({
 
   if (!output) {
     return (
-      <div className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center gap-4 px-6 py-16 text-center text-black dark:text-zinc-50">
+      <div className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center gap-4 px-6 py-16 text-center text-foreground">
         <p className="text-lg font-medium">No itinerary has been generated for this trip yet.</p>
-        <Link href={`/trip/${slug}`} className="text-sm underline">
+        <Link href={`/trip/${slug}`} className="text-sm text-accent underline">
           Back to the group view
         </Link>
       </div>
@@ -106,17 +106,17 @@ export default async function ResultsPage({
   }));
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-4xl flex-col gap-8 px-6 py-16 text-black dark:text-zinc-50">
+    <div className="mx-auto flex min-h-screen max-w-4xl flex-col gap-8 px-6 py-16 text-foreground">
       <div>
-        <Link href={`/trip/${slug}`} className="text-sm underline">
+        <Link href={`/trip/${slug}`} className="text-sm text-accent underline">
           ← Back to the group view
         </Link>
         <h1 className="mt-4 text-2xl font-semibold">{trip.organizer_name}&apos;s trip plan</h1>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-black/10 dark:border-white/10">
+      <div className="overflow-hidden rounded-xl border border-border bg-surface">
         {trip.cover_image_url && (
-          <div className="relative h-48 w-full bg-zinc-100 dark:bg-zinc-900">
+          <div className="relative h-48 w-full bg-accent-soft">
             <Image
               src={trip.cover_image_url}
               alt=""
@@ -127,19 +127,19 @@ export default async function ResultsPage({
           </div>
         )}
         <div className="p-5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted">
             Destination pick
           </p>
           <p className="mt-2 text-xl font-semibold">{output.destination_pick}</p>
           {destinationReasoning && (
-            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{destinationReasoning}</p>
+            <p className="mt-2 text-sm text-muted">{destinationReasoning}</p>
           )}
           {airbnbUrl && (
             <a
               href={airbnbUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-3 inline-block rounded-full border border-black/10 px-3 py-1.5 text-sm dark:border-white/10"
+              className="mt-3 inline-block rounded-full border border-border px-3 py-1.5 text-sm"
             >
               🏠 Search stays on Airbnb ↗
             </a>
@@ -153,7 +153,7 @@ export default async function ResultsPage({
       </div>
 
       <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted">
           Itinerary options
         </p>
         <div className="mt-3">

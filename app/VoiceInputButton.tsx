@@ -76,10 +76,11 @@ export function VoiceInputButton({ onTranscribed }: { onTranscribed: (text: stri
         onClick={recording ? stopRecording : startRecording}
         disabled={transcribing}
         title={recording ? "Stop recording" : "Record voice input"}
-        className={`rounded-full border px-2 py-1 text-xs disabled:opacity-50 ${
+        aria-label={recording ? "Stop recording" : "Record voice input"}
+        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 text-xl shadow-sm transition disabled:opacity-50 ${
           recording
-            ? "border-red-400 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-950 dark:text-red-300"
-            : "border-black/10 dark:border-white/10"
+            ? "animate-pulse border-red-400 bg-red-50 text-red-700 dark:border-red-500 dark:bg-red-950 dark:text-red-300"
+            : "border-accent bg-accent-soft text-accent hover:bg-accent hover:text-accent-foreground"
         }`}
       >
         {transcribing ? "…" : recording ? "⏹" : "🎤"}

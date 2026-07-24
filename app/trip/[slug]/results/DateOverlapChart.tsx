@@ -24,17 +24,17 @@ export function DateOverlapChart({ participants }: { participants: ParticipantDa
   const span = Math.max(max - min, 1);
 
   return (
-    <div className="rounded-xl border border-black/10 p-5 dark:border-white/10">
-      <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+    <div className="rounded-xl border border-border bg-surface p-5">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted">
         Date availability overlap
       </p>
       <div className="mt-4 flex flex-col gap-2">
         {participants.map((p, i) => (
           <div key={`${p.name}-${i}`} className="flex items-center gap-3">
-            <span className="w-24 shrink-0 truncate text-xs text-zinc-600 dark:text-zinc-400">
+            <span className="w-24 shrink-0 truncate text-xs text-muted">
               {p.name}
             </span>
-            <div className="relative h-4 flex-1 rounded-full bg-zinc-100 dark:bg-zinc-900">
+            <div className="relative h-4 flex-1 rounded-full bg-border">
               {p.ranges.map((r, j) => {
                 const left = ((toTime(r.start) - min) / span) * 100;
                 const width = Math.max(((toTime(r.end) - toTime(r.start)) / span) * 100, 2);
@@ -53,7 +53,7 @@ export function DateOverlapChart({ participants }: { participants: ParticipantDa
           </div>
         ))}
       </div>
-      <div className="mt-2 flex justify-between text-[10px] text-zinc-400">
+      <div className="mt-2 flex justify-between text-[10px] text-muted">
         <span>{new Date(min).toISOString().slice(0, 10)}</span>
         <span>{new Date(max).toISOString().slice(0, 10)}</span>
       </div>

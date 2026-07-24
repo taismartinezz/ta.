@@ -160,7 +160,7 @@ export function ResultsView({
   return (
     <div className="flex flex-col gap-6">
       {regenerationFeedback && (
-        <p className="text-xs text-zinc-500">
+        <p className="text-xs text-muted">
           This version was regenerated based on feedback: &quot;{regenerationFeedback}&quot;
         </p>
       )}
@@ -179,10 +179,10 @@ export function ResultsView({
           return (
             <div
               key={i}
-              className={`rounded-xl border p-5 ${
+              className={`rounded-xl border bg-surface p-5 ${
                 isThisLocked
                   ? "border-green-400 dark:border-green-700"
-                  : "border-black/10 dark:border-white/10"
+                  : "border-border"
               } ${isThisLocked && justLocked ? "animate-lock-reveal" : ""}`}
             >
               <div className="flex items-center justify-between gap-2">
@@ -196,7 +196,7 @@ export function ResultsView({
 
               {option.estimated_cost_per_person !== undefined && (
                 <div className="mt-2">
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                  <p className="text-sm text-muted">
                     Est. {option.estimated_cost_currency} {option.estimated_cost_per_person.toLocaleString()}{" "}
                     per person
                   </p>
@@ -212,7 +212,7 @@ export function ResultsView({
               <div className="mt-4 flex flex-col gap-4">
                 {option.days.map((day) => (
                   <div key={day.day_number}>
-                    <p className="text-sm font-semibold text-zinc-500">Day {day.day_number}</p>
+                    <p className="text-sm font-semibold text-muted">Day {day.day_number}</p>
                     <ul className="mt-1 list-inside list-disc text-sm">
                       {day.activities.map((activity, j) => (
                         <li key={j}>{activity}</li>
@@ -228,7 +228,7 @@ export function ResultsView({
                 <button
                   type="button"
                   onClick={() => handleExport(option)}
-                  className="mt-4 rounded-full border border-black/10 px-3 py-1.5 text-sm dark:border-white/10"
+                  className="mt-4 rounded-full border border-border px-3 py-1.5 text-sm"
                 >
                   📅 Add to calendar (.ics)
                 </button>
@@ -244,7 +244,7 @@ export function ResultsView({
                       type="button"
                       onClick={() => handleLock(i)}
                       disabled={locking}
-                      className="rounded-full bg-black px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+                      className="rounded-full bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground disabled:opacity-50"
                     >
                       {locking ? "Locking in..." : "Yes, lock it in"}
                     </button>
@@ -252,7 +252,7 @@ export function ResultsView({
                       type="button"
                       onClick={() => setConfirmingLockIndex(null)}
                       disabled={locking}
-                      className="rounded-full border border-black/10 px-3 py-1.5 text-xs dark:border-white/10"
+                      className="rounded-full border border-border px-3 py-1.5 text-xs"
                     >
                       Cancel
                     </button>
@@ -261,15 +261,15 @@ export function ResultsView({
               )}
 
               {!isLocked && confirmingLockIndex !== i && (
-                <div className="mt-4 flex items-center gap-4 border-t border-black/10 pt-4 dark:border-white/10">
+                <div className="mt-4 flex items-center gap-4 border-t border-border pt-4">
                   <button
                     type="button"
                     onClick={() => handleReact(i, "up")}
                     disabled={!participantId}
                     className={`rounded-full border px-3 py-1.5 text-sm disabled:opacity-40 ${
                       mine === "up"
-                        ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
-                        : "border-black/10 dark:border-white/10"
+                        ? "border-accent bg-accent text-accent-foreground"
+                        : "border-border"
                     }`}
                   >
                     👍 {optionCounts.up}
@@ -280,8 +280,8 @@ export function ResultsView({
                     disabled={!participantId}
                     className={`rounded-full border px-3 py-1.5 text-sm disabled:opacity-40 ${
                       mine === "down"
-                        ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
-                        : "border-black/10 dark:border-white/10"
+                        ? "border-accent bg-accent text-accent-foreground"
+                        : "border-border"
                     }`}
                   >
                     👎 {optionCounts.down}
@@ -289,7 +289,7 @@ export function ResultsView({
                   <button
                     type="button"
                     onClick={() => setConfirmingLockIndex(i)}
-                    className="ml-auto rounded-full bg-black px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+                    className="ml-auto rounded-full bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground disabled:opacity-50"
                   >
                     Lock in this option
                   </button>
@@ -301,13 +301,13 @@ export function ResultsView({
       </div>
       {lockError && <p className="text-sm text-red-600 dark:text-red-400">{lockError}</p>}
       {!participantId && !isLocked && (
-        <p className="text-xs text-zinc-500">Join this trip to vote or lock in an option.</p>
+        <p className="text-xs text-muted">Join this trip to vote or lock in an option.</p>
       )}
 
       {!isLocked && (
-        <div className="rounded-xl border border-black/10 p-5 dark:border-white/10">
+        <div className="rounded-xl border border-border bg-surface p-5">
           <p className="text-sm font-semibold">Not quite right? Regenerate with feedback</p>
-          <p className="mt-1 text-xs text-zinc-500">
+          <p className="mt-1 text-xs text-muted">
             e.g. &quot;more relaxing&quot;, &quot;cheaper&quot;, &quot;swap day 3 for something
             outdoors&quot;
           </p>
@@ -317,7 +317,7 @@ export function ResultsView({
               onChange={(e) => setFeedback(e.target.value)}
               rows={2}
               placeholder="What should change?"
-              className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm dark:border-white/10 dark:bg-zinc-900"
+              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
             />
             <VoiceInputButton
               onTranscribed={(text) =>
@@ -332,7 +332,7 @@ export function ResultsView({
             type="button"
             onClick={handleRegenerate}
             disabled={regenerating}
-            className="mt-3 rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+            className="mt-3 rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground disabled:opacity-50"
           >
             {regenerating ? "Regenerating..." : "Regenerate itinerary"}
           </button>
@@ -340,7 +340,7 @@ export function ResultsView({
       )}
 
       {isLocked && (
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="text-sm text-muted">
           The group has locked in a final choice — voting and regeneration are closed.
         </p>
       )}

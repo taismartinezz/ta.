@@ -114,6 +114,8 @@ export async function POST(
     bucket_list_interest,
     nightlife_interest,
     pace_preference,
+    departure_location,
+    desired_trip_length_days,
   } = body;
 
   if (typeof edit_token !== "string") {
@@ -147,6 +149,18 @@ export async function POST(
   if (hasInvalidDateOrder(available_dates)) {
     return NextResponse.json(
       { error: "End date must be after the start date for each date range" },
+      { status: 400 }
+    );
+  }
+  if (
+    desired_trip_length_days !== undefined &&
+    desired_trip_length_days !== null &&
+    (!Number.isInteger(desired_trip_length_days) ||
+      desired_trip_length_days < 1 ||
+      desired_trip_length_days > 60)
+  ) {
+    return NextResponse.json(
+      { error: "desired_trip_length_days must be a whole number between 1 and 60" },
       { status: 400 }
     );
   }
@@ -192,6 +206,11 @@ export async function POST(
         bucket_list_interest: optionalInterestLevel(bucket_list_interest),
         nightlife_interest: optionalInterestLevel(nightlife_interest),
         pace_preference: optionalPacePreference(pace_preference),
+        departure_location:
+          typeof departure_location === "string" && departure_location.trim()
+            ? departure_location.trim()
+            : null,
+        desired_trip_length_days: desired_trip_length_days ?? null,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "participant_id" }

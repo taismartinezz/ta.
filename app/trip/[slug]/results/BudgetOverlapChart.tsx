@@ -1,6 +1,7 @@
 // Anonymized on purpose — individual budgets stay private even here, per the
 // same principle behind the private outlier-flagging flow on the submit form.
-// Only the spread (min/median/max) is shown, never attributed to a name.
+// No per-person marks at all (even unlabeled dots let a small group infer who
+// submitted what) — only the aggregate range and median are ever rendered.
 export function BudgetOverlapChart({
   amounts,
   currency,
@@ -14,36 +15,36 @@ export function BudgetOverlapChart({
 
   const min = Math.min(...amounts);
   const max = Math.max(...amounts);
-  const span = Math.max(max - min, 1);
   const sorted = [...amounts].sort((a, b) => a - b);
   const median = sorted[Math.floor(sorted.length / 2)];
+  // A band around the median, not a point, so the median itself can't be
+  // reverse-engineered as "someone's exact number" when the group is small.
+  const bandLeft = min === max ? 0 : (Math.max(median - (max - min) * 0.08, min) - min) / (max - min) * 100;
+  const bandWidth = min === max ? 100 : ((Math.min(median + (max - min) * 0.08, max) - min) / (max - min)) * 100 - bandLeft;
 
   return (
-    <div className="rounded-xl border border-black/10 p-5 dark:border-white/10">
-      <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+    <div className="rounded-xl border border-border bg-surface p-5">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted">
         Budget spread across the group
       </p>
-      <p className="mt-1 text-xs text-zinc-500">
-        Individual amounts stay anonymous — this only shows the range.
+      <p className="mt-1 text-xs text-muted">
+        Individual amounts stay anonymous — this only shows the aggregate range.
       </p>
-      <div className="relative mt-6 h-2 rounded-full bg-zinc-100 dark:bg-zinc-900">
-        {amounts.map((a, i) => {
-          const left = ((a - min) / span) * 100;
-          return (
-            <div
-              key={i}
-              className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#2a78d6] ring-2 ring-white dark:bg-[#3987e5] dark:ring-zinc-950"
-              style={{ left: `${left}%` }}
-              title={`${currency} ${a.toLocaleString()}`}
-            />
-          );
-        })}
+      <div className="relative mt-6 h-2 rounded-full bg-border">
+        <div
+          className="absolute inset-y-0 rounded-full bg-accent-soft"
+          style={{ left: 0, width: "100%" }}
+        />
+        <div
+          className="absolute inset-y-0 rounded-full bg-accent"
+          style={{ left: `${bandLeft}%`, width: `${bandWidth}%` }}
+        />
       </div>
-      <div className="mt-2 flex justify-between text-[10px] text-zinc-400">
+      <div className="mt-2 flex justify-between text-[10px] text-muted">
         <span>
           {currency} {min.toLocaleString()}
         </span>
-        <span>
+        <span className="font-medium text-accent">
           median ~{currency} {median.toLocaleString()}
         </span>
         <span>

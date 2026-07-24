@@ -10,6 +10,7 @@ export async function POST(
   const { slug } = await params;
   const body = await request.json().catch(() => null);
   const name = typeof body?.name === "string" ? body.name.trim() : "";
+  const email = typeof body?.email === "string" ? body.email.trim() : null;
 
   if (!name) {
     return NextResponse.json({ error: "name is required" }, { status: 400 });
@@ -41,6 +42,7 @@ export async function POST(
     .insert({
       trip_id: trip.id,
       name,
+      email,
       edit_token: generateEditToken(),
       user_id: user?.id ?? null,
     })

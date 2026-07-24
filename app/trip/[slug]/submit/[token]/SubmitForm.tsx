@@ -2,10 +2,11 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { participantStorageKey, editTokenStorageKey } from "@/lib/participant-storage";
-import { ACTIVITY_INTEREST_OPTIONS } from "@/lib/activity-options";
+import { ACTIVITY_INTEREST_OPTIONS, ACTIVITY_INTEREST_EMOJI } from "@/lib/activity-options";
 import { MIN_BUDGET_AMOUNT, MAX_BUDGET_AMOUNT } from "@/lib/constants";
 import { getAuthHeaders } from "@/lib/supabase/auth-header";
 import { VoiceInputButton } from "@/app/VoiceInputButton";
+import { DateRangePicker } from "@/app/DateRangePicker";
 import type { ActivityLevel, InterestLevel, PacePreference, Submission, TripStatus } from "@/lib/types";
 
 interface ReusableSubmission {
@@ -22,16 +23,22 @@ interface ReusableSubmission {
   pace_preference: PacePreference | null;
 }
 
-const INTEREST_LEVELS: { value: InterestLevel; label: string }[] = [
-  { value: "low", label: "Not really" },
-  { value: "medium", label: "Somewhat" },
-  { value: "high", label: "Very" },
+const INTEREST_LEVELS: { value: InterestLevel; label: string; emoji: string }[] = [
+  { value: "low", label: "Not really", emoji: "😌" },
+  { value: "medium", label: "Somewhat", emoji: "🙂" },
+  { value: "high", label: "Very!", emoji: "🤩" },
 ];
 
-const PACE_PREFERENCES: { value: PacePreference; label: string }[] = [
-  { value: "relaxed", label: "Relaxed" },
-  { value: "balanced", label: "Balanced" },
-  { value: "packed", label: "Packed" },
+const NIGHTLIFE_LEVELS: { value: InterestLevel; label: string; emoji: string }[] = [
+  { value: "low", label: "Early to bed", emoji: "😴" },
+  { value: "medium", label: "A drink or two", emoji: "🍸" },
+  { value: "high", label: "Dance till close", emoji: "🕺" },
+];
+
+const PACE_PREFERENCES: { value: PacePreference; label: string; emoji: string }[] = [
+  { value: "relaxed", label: "Relaxed", emoji: "🐢" },
+  { value: "balanced", label: "Balanced", emoji: "⚖️" },
+  { value: "packed", label: "Packed", emoji: "🐇" },
 ];
 
 interface DateRangeInput {
@@ -44,10 +51,10 @@ interface OutlierCheckResponse {
   group_median: number | null;
 }
 
-const ACTIVITY_LEVELS: { value: ActivityLevel; label: string }[] = [
-  { value: "relaxing", label: "Relaxing" },
-  { value: "balanced", label: "Balanced" },
-  { value: "adventurous", label: "Adventurous" },
+const ACTIVITY_LEVELS: { value: ActivityLevel; label: string; emoji: string }[] = [
+  { value: "relaxing", label: "Relaxing", emoji: "🧘" },
+  { value: "balanced", label: "Balanced", emoji: "⚖️" },
+  { value: "adventurous", label: "Adventurous", emoji: "🔥" },
 ];
 
 function parseTags(value: string): string[] {
@@ -85,6 +92,14 @@ export function SubmitForm({
   );
   const [dateRanges, setDateRanges] = useState<DateRangeInput[]>(
     toDateRangeInputs(initialSubmission?.available_dates)
+  );
+  const [departureLocation, setDepartureLocation] = useState(
+    initialSubmission?.departure_location ?? ""
+  );
+  const [tripLengthDays, setTripLengthDays] = useState(
+    initialSubmission?.desired_trip_length_days
+      ? String(initialSubmission.desired_trip_length_days)
+      : ""
   );
   const [activityLevel, setActivityLevel] = useState<ActivityLevel>(
     initialSubmission?.activity_level ?? "balanced"
@@ -187,10 +202,8 @@ export function SubmitForm({
     setPrefilled(true);
   }
 
-  function updateDateRange(index: number, field: keyof DateRangeInput, value: string) {
-    setDateRanges((prev) =>
-      prev.map((range, i) => (i === index ? { ...range, [field]: value } : range))
-    );
+  function updateDateRange(index: number, range: DateRangeInput) {
+    setDateRanges((prev) => prev.map((r, i) => (i === index ? range : r)));
   }
 
   function addDateRange() {
@@ -262,6 +275,17 @@ export function SubmitForm({
       return;
     }
 
+    if (!departureLocation.trim()) {
+      setError("Let us know where you'd be flying from");
+      return;
+    }
+
+    const tripLength = Number(tripLengthDays);
+    if (!Number.isInteger(tripLength) || tripLength < 1 || tripLength > 60) {
+      setError("Enter how many days you want the trip to be");
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch(`/api/trips/${slug}/submit`, {
@@ -272,6 +296,8 @@ export function SubmitForm({
           budget_amount: budget,
           budget_currency: budgetCurrency,
           available_dates: validDateRanges,
+          departure_location: departureLocation.trim(),
+          desired_trip_length_days: tripLength,
           activity_level: activityLevel,
           must_haves: parseTags(mustHaves),
           dealbreakers: parseTags(dealbreakers),
@@ -306,14 +332,14 @@ export function SubmitForm({
 
   if (submitted) {
     return (
-      <div className="mt-8 rounded-xl border border-black/10 p-6 text-center dark:border-white/10">
-        <p className="text-lg font-medium text-black dark:text-zinc-50">
-          Thanks — your preferences are saved.
+      <div className="mt-8 rounded-xl border border-border bg-surface p-6 text-center">
+        <p className="text-lg font-medium text-foreground">
+          🎉 Thanks — your preferences are saved.
         </p>
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="mt-2 text-sm text-muted">
           Bookmark this page if you want to come back and edit your answers later.
         </p>
-        <a href={`/trip/${slug}`} className="mt-3 inline-block text-sm underline">
+        <a href={`/trip/${slug}`} className="mt-3 inline-block text-sm text-accent underline">
           Back to the group view
         </a>
       </div>
@@ -321,7 +347,7 @@ export function SubmitForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-8 text-black dark:text-zinc-50">
+    <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-8 text-foreground">
       {wasNudged && (
         <div className="rounded-lg border border-blue-300 bg-blue-50 p-3 text-sm text-blue-900 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200">
           👋 Your group is waiting on you to submit your preferences!
@@ -329,14 +355,14 @@ export function SubmitForm({
       )}
 
       {reusableSubmission && !prefilled && (
-        <div className="rounded-lg border border-black/10 p-3 text-sm dark:border-white/10">
-          <p className="text-zinc-600 dark:text-zinc-400">
+        <div className="rounded-lg border border-border bg-surface p-3 text-sm">
+          <p className="text-muted">
             You&apos;re logged in and have preferences from a previous trip.
           </p>
           <button
             type="button"
             onClick={applyPrefill}
-            className="mt-2 rounded-full border border-black/10 px-3 py-1 text-xs dark:border-white/10"
+            className="mt-2 rounded-full border border-border px-3 py-1 text-xs"
           >
             Reuse my last preferences
           </button>
@@ -344,7 +370,7 @@ export function SubmitForm({
       )}
 
       <fieldset className="flex flex-col gap-3">
-        <legend className="text-sm font-semibold">Budget</legend>
+        <legend className="text-sm font-semibold">💰 Budget</legend>
         <div className="flex gap-3">
           <input
             type="number"
@@ -354,12 +380,12 @@ export function SubmitForm({
             onChange={(e) => setBudgetAmount(e.target.value)}
             onBlur={handleBudgetBlur}
             placeholder="Amount"
-            className="w-full rounded-lg border border-black/10 px-3 py-2 dark:border-white/10 dark:bg-zinc-900"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2"
           />
           <select
             value={budgetCurrency}
             onChange={(e) => setBudgetCurrency(e.target.value)}
-            className="rounded-lg border border-black/10 px-3 py-2 dark:border-white/10 dark:bg-zinc-900"
+            className="rounded-lg border border-border bg-surface px-3 py-2"
           >
             <option value="USD">USD</option>
             <option value="EUR">EUR</option>
@@ -386,40 +412,65 @@ export function SubmitForm({
       </fieldset>
 
       <fieldset className="flex flex-col gap-3">
-        <legend className="text-sm font-semibold">Available dates</legend>
+        <legend className="text-sm font-semibold">✈️ Where are you flying from?</legend>
+        <input
+          type="text"
+          value={departureLocation}
+          onChange={(e) => setDepartureLocation(e.target.value)}
+          placeholder="e.g. Chicago, IL"
+          className="w-full rounded-lg border border-border bg-surface px-3 py-2"
+        />
+        <p className="text-xs text-muted">
+          Helps us factor flight costs into the group&apos;s budget estimate.
+        </p>
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-3">
+        <legend className="text-sm font-semibold">📅 When are you free?</legend>
         {dateRanges.map((range, index) => (
           <div key={index} className="flex items-center gap-3">
-            <input
-              type="date"
-              value={range.start}
-              onChange={(e) => updateDateRange(index, "start", e.target.value)}
-              className="rounded-lg border border-black/10 px-3 py-2 dark:border-white/10 dark:bg-zinc-900"
-            />
-            <span className="text-sm text-zinc-500">to</span>
-            <input
-              type="date"
-              value={range.end}
-              onChange={(e) => updateDateRange(index, "end", e.target.value)}
-              className="rounded-lg border border-black/10 px-3 py-2 dark:border-white/10 dark:bg-zinc-900"
-            />
+            <div className="w-full">
+              <DateRangePicker
+                start={range.start}
+                end={range.end}
+                onChange={(r) => updateDateRange(index, r)}
+              />
+            </div>
             {dateRanges.length > 1 && (
               <button
                 type="button"
                 onClick={() => removeDateRange(index)}
-                className="text-sm text-zinc-400 hover:text-zinc-600"
+                className="text-sm text-muted hover:text-foreground"
               >
                 Remove
               </button>
             )}
           </div>
         ))}
-        <button type="button" onClick={addDateRange} className="self-start text-sm underline">
+        <button type="button" onClick={addDateRange} className="self-start text-sm text-accent underline">
           + Add another window
         </button>
       </fieldset>
 
       <fieldset className="flex flex-col gap-3">
-        <legend className="text-sm font-semibold">Vibe</legend>
+        <legend className="text-sm font-semibold">🗓️ How many days should the trip be?</legend>
+        <input
+          type="number"
+          min={1}
+          max={60}
+          value={tripLengthDays}
+          onChange={(e) => setTripLengthDays(e.target.value)}
+          placeholder="e.g. 5"
+          className="w-40 rounded-lg border border-border bg-surface px-3 py-2"
+        />
+        <p className="text-xs text-muted">
+          We&apos;ll build the itinerary to exactly this length, even if your available dates
+          span longer.
+        </p>
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-3">
+        <legend className="text-sm font-semibold">✨ What&apos;s your vibe?</legend>
         <div className="flex gap-2">
           {ACTIVITY_LEVELS.map((level) => (
             <button
@@ -428,18 +479,18 @@ export function SubmitForm({
               onClick={() => setActivityLevel(level.value)}
               className={`rounded-full px-4 py-2 text-sm ${
                 activityLevel === level.value
-                  ? "bg-black text-white dark:bg-white dark:text-black"
-                  : "border border-black/10 dark:border-white/10"
+                  ? "bg-accent text-accent-foreground"
+                  : "border border-border"
               }`}
             >
-              {level.label}
+              {level.emoji} {level.label}
             </button>
           ))}
         </div>
       </fieldset>
 
       <fieldset className="flex flex-col gap-3">
-        <legend className="text-sm font-semibold">Activities you&apos;re interested in</legend>
+        <legend className="text-sm font-semibold">🙌 What are you into?</legend>
         <div className="flex flex-wrap gap-2">
           {ACTIVITY_INTEREST_OPTIONS.map((option) => (
             <button
@@ -448,25 +499,25 @@ export function SubmitForm({
               onClick={() => toggleActivityInterest(option)}
               className={`rounded-full px-3 py-1.5 text-sm capitalize ${
                 activityInterests.includes(option)
-                  ? "bg-black text-white dark:bg-white dark:text-black"
-                  : "border border-black/10 dark:border-white/10"
+                  ? "bg-accent text-accent-foreground"
+                  : "border border-border"
               }`}
             >
-              {option}
+              {ACTIVITY_INTEREST_EMOJI[option]} {option}
             </button>
           ))}
         </div>
       </fieldset>
 
       <fieldset className="flex flex-col gap-3">
-        <legend className="text-sm font-semibold">Must-haves</legend>
+        <legend className="text-sm font-semibold">🙏 Any must-haves?</legend>
         <div className="flex items-center gap-2">
           <input
             type="text"
             value={mustHaves}
             onChange={(e) => setMustHaves(e.target.value)}
             placeholder="e.g. pool, private rooms, walkable to town"
-            className="w-full rounded-lg border border-black/10 px-3 py-2 dark:border-white/10 dark:bg-zinc-900"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2"
           />
           <VoiceInputButton
             onTranscribed={(text) =>
@@ -474,18 +525,18 @@ export function SubmitForm({
             }
           />
         </div>
-        <p className="text-xs text-zinc-500">Comma-separated</p>
+        <p className="text-xs text-muted">Comma-separated</p>
       </fieldset>
 
       <fieldset className="flex flex-col gap-3">
-        <legend className="text-sm font-semibold">Dealbreakers</legend>
+        <legend className="text-sm font-semibold">🚫 Any dealbreakers?</legend>
         <div className="flex items-center gap-2">
           <input
             type="text"
             value={dealbreakers}
             onChange={(e) => setDealbreakers(e.target.value)}
             placeholder="e.g. no camping, no red-eye flights"
-            className="w-full rounded-lg border border-black/10 px-3 py-2 dark:border-white/10 dark:bg-zinc-900"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2"
           />
           <VoiceInputButton
             onTranscribed={(text) =>
@@ -493,29 +544,29 @@ export function SubmitForm({
             }
           />
         </div>
-        <p className="text-xs text-zinc-500">Comma-separated</p>
+        <p className="text-xs text-muted">Comma-separated</p>
       </fieldset>
 
       <fieldset className="flex flex-col gap-3">
         <button
           type="button"
           onClick={() => setShowMorePreferences((v) => !v)}
-          className="self-start text-sm underline"
+          className="self-start text-sm text-accent underline"
         >
-          {showMorePreferences ? "Hide" : "Add more preferences (optional)"}
+          {showMorePreferences ? "Hide bonus round" : "🎉 Bonus round (optional, takes 20 seconds)"}
         </button>
 
         {showMorePreferences && (
-          <div className="flex flex-col gap-6 rounded-xl border border-black/10 p-4 dark:border-white/10">
+          <div className="flex flex-col gap-6 rounded-xl border border-border bg-surface p-4">
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-semibold">Favorite cuisines</label>
+              <label className="text-sm font-semibold">🍽️ Favorite cuisines</label>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
                   value={favoriteCuisines}
                   onChange={(e) => setFavoriteCuisines(e.target.value)}
                   placeholder="e.g. Thai, Italian, tacos"
-                  className="w-full rounded-lg border border-black/10 px-3 py-2 dark:border-white/10 dark:bg-zinc-900"
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2"
                 />
                 <VoiceInputButton
                   onTranscribed={(text) =>
@@ -526,14 +577,14 @@ export function SubmitForm({
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-semibold">Languages spoken</label>
+              <label className="text-sm font-semibold">🗣️ Languages spoken</label>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
                   value={languagesSpoken}
                   onChange={(e) => setLanguagesSpoken(e.target.value)}
                   placeholder="e.g. English, Spanish"
-                  className="w-full rounded-lg border border-black/10 px-3 py-2 dark:border-white/10 dark:bg-zinc-900"
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2"
                 />
                 <VoiceInputButton
                   onTranscribed={(text) =>
@@ -544,7 +595,7 @@ export function SubmitForm({
             </div>
 
             <div className="flex flex-col gap-2">
-              <p className="text-sm font-semibold">Into &quot;bucket list&quot; adventure activities?</p>
+              <p className="text-sm font-semibold">🪂 Down for a once-in-a-lifetime activity?</p>
               <div className="flex gap-2">
                 {INTEREST_LEVELS.map((level) => (
                   <button
@@ -553,38 +604,38 @@ export function SubmitForm({
                     onClick={() => setBucketListInterest(level.value)}
                     className={`rounded-full px-3 py-1.5 text-sm ${
                       bucketListInterest === level.value
-                        ? "bg-black text-white dark:bg-white dark:text-black"
-                        : "border border-black/10 dark:border-white/10"
+                        ? "bg-accent text-accent-foreground"
+                        : "border border-border"
                     }`}
                   >
-                    {level.label}
+                    {level.emoji} {level.label}
                   </button>
                 ))}
               </div>
             </div>
 
             <div className="flex flex-col gap-2">
-              <p className="text-sm font-semibold">Into nightlife?</p>
+              <p className="text-sm font-semibold">🌙 Nightlife energy?</p>
               <div className="flex gap-2">
-                {INTEREST_LEVELS.map((level) => (
+                {NIGHTLIFE_LEVELS.map((level) => (
                   <button
                     key={level.value}
                     type="button"
                     onClick={() => setNightlifeInterest(level.value)}
                     className={`rounded-full px-3 py-1.5 text-sm ${
                       nightlifeInterest === level.value
-                        ? "bg-black text-white dark:bg-white dark:text-black"
-                        : "border border-black/10 dark:border-white/10"
+                        ? "bg-accent text-accent-foreground"
+                        : "border border-border"
                     }`}
                   >
-                    {level.label}
+                    {level.emoji} {level.label}
                   </button>
                 ))}
               </div>
             </div>
 
             <div className="flex flex-col gap-2">
-              <p className="text-sm font-semibold">Preferred pace</p>
+              <p className="text-sm font-semibold">🏃 Preferred pace?</p>
               <div className="flex gap-2">
                 {PACE_PREFERENCES.map((pace) => (
                   <button
@@ -593,11 +644,11 @@ export function SubmitForm({
                     onClick={() => setPacePreference(pace.value)}
                     className={`rounded-full px-3 py-1.5 text-sm ${
                       pacePreference === pace.value
-                        ? "bg-black text-white dark:bg-white dark:text-black"
-                        : "border border-black/10 dark:border-white/10"
+                        ? "bg-accent text-accent-foreground"
+                        : "border border-border"
                     }`}
                   >
-                    {pace.label}
+                    {pace.emoji} {pace.label}
                   </button>
                 ))}
               </div>
@@ -621,7 +672,7 @@ export function SubmitForm({
       <button
         type="submit"
         disabled={loading}
-        className="rounded-full bg-black px-5 py-3 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+        className="rounded-full bg-accent px-5 py-3 text-sm font-medium text-accent-foreground disabled:opacity-50"
       >
         {loading ? "Saving..." : isEditMode ? "Save changes" : "Submit my preferences"}
       </button>

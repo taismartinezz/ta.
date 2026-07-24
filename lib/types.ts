@@ -17,6 +17,7 @@ export interface Participant {
   id: string;
   trip_id: string;
   name: string;
+  email: string | null;
   edit_token: string | null;
   created_at: string;
 }
@@ -33,6 +34,8 @@ export interface Submission {
   budget_amount: number;
   budget_currency: string;
   available_dates: DateRange[];
+  desired_trip_length_days: number | null;
+  departure_location: string | null;
   activity_level: ActivityLevel;
   must_haves: string[];
   dealbreakers: string[];

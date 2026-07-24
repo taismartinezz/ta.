@@ -112,16 +112,16 @@ export function GroupView({
   const canGenerate = submittedIds.size >= MIN_SUBMISSIONS_TO_GENERATE;
 
   return (
-    <div className="rounded-xl border border-black/10 p-4 dark:border-white/10">
-      <p className="text-sm font-medium text-black dark:text-zinc-50">
+    <div className="rounded-xl border border-border bg-surface p-4">
+      <p className="text-sm font-medium text-foreground">
         {participants.length} joined · {submittedIds.size} submitted
       </p>
       <ul className="mt-3 flex flex-col gap-2">
         {participants.map((p) => (
           <li
             key={p.id}
-            className={`flex items-center justify-between rounded-lg px-2 py-1 text-sm text-black transition-colors duration-1000 dark:text-zinc-50 ${
-              justUpdatedId === p.id ? "bg-blue-50 dark:bg-blue-950" : ""
+            className={`flex items-center justify-between rounded-lg px-2 py-1 text-sm text-foreground transition-colors duration-1000 ${
+              justUpdatedId === p.id ? "bg-accent-soft" : ""
             }`}
           >
             <span>{p.name}</span>
@@ -129,12 +129,12 @@ export function GroupView({
               <span className="text-green-600 dark:text-green-400">Submitted</span>
             ) : (
               <span className="flex items-center gap-2">
-                <span className="text-zinc-400">Waiting</span>
+                <span className="text-muted">Waiting</span>
                 <button
                   type="button"
                   onClick={() => handleNudge(p.id)}
                   disabled={nudged.has(p.id)}
-                  className="rounded-full border border-black/10 px-2 py-0.5 text-xs disabled:opacity-50 dark:border-white/10"
+                  className="rounded-full border border-border px-2 py-0.5 text-xs disabled:opacity-50"
                 >
                   {nudged.has(p.id) ? "Nudged" : "Nudge"}
                 </button>
@@ -143,21 +143,21 @@ export function GroupView({
           </li>
         ))}
         {participants.length === 0 && (
-          <li className="text-sm text-zinc-400">No one has joined yet.</li>
+          <li className="text-sm text-muted">No one has joined yet.</li>
         )}
       </ul>
 
-      <div className="mt-4 flex flex-col gap-2 border-t border-black/10 pt-4 dark:border-white/10">
+      <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4">
         <button
           type="button"
           onClick={handleGenerate}
           disabled={!canGenerate || generating}
-          className="rounded-full bg-black px-5 py-2.5 text-center text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+          className="rounded-full bg-accent px-5 py-2.5 text-center text-sm font-medium text-accent-foreground disabled:opacity-50"
         >
           {generating ? "Generating..." : "Generate itinerary options"}
         </button>
         {!canGenerate && (
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-muted">
             Need at least {MIN_SUBMISSIONS_TO_GENERATE} submissions before generating
             ({submittedIds.size}/{MIN_SUBMISSIONS_TO_GENERATE} so far).
           </p>

@@ -32,19 +32,19 @@ export function AuthNav() {
   }
 
   return (
-    <div className="flex items-center justify-end gap-4 px-6 py-3 text-sm text-zinc-600 dark:text-zinc-400">
+    <div className="flex items-center justify-end gap-4 px-6 py-3 text-sm text-muted">
       {email ? (
         <>
-          <Link href="/trips" className="underline">
+          <Link href="/trips" className="text-accent underline">
             My trips
           </Link>
-          <span className="text-zinc-400">{email}</span>
-          <button type="button" onClick={handleLogout} className="underline">
+          <span className="text-muted">{email}</span>
+          <button type="button" onClick={handleLogout} className="text-accent underline">
             Log out
           </button>
         </>
       ) : (
-        <Link href="/login" className="underline">
+        <Link href="/login" className="text-accent underline">
           Log in
         </Link>
       )}

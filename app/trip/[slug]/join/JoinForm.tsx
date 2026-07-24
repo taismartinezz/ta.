@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { participantStorageKey, editTokenStorageKey } from "@/lib/participant-storage";
 import { getAuthHeaders } from "@/lib/supabase/auth-header";
@@ -10,12 +10,43 @@ interface PendingJoin {
   editToken: string;
 }
 
+interface ExistingJoin {
+  name: string;
+  editToken: string;
+}
+
 export function JoinForm({ slug }: { slug: string }) {
   const router = useRouter();
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingDuplicate, setPendingDuplicate] = useState<PendingJoin | null>(null);
+  const [checkingExisting, setCheckingExisting] = useState(true);
+  const [existingJoin, setExistingJoin] = useState<ExistingJoin | null>(null);
+  const [joinAsNew, setJoinAsNew] = useState(false);
+
+  // Prevents the most common cause of duplicate participants: re-opening the
+  // group's invite link on a device that already joined this trip.
+  useEffect(() => {
+    const existingToken = localStorage.getItem(editTokenStorageKey(slug));
+    if (!existingToken) {
+      setCheckingExisting(false);
+      return;
+    }
+
+    fetch(`/api/trips/${slug}/submit?token=${existingToken}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.participant_name) {
+          setExistingJoin({ name: data.participant_name, editToken: existingToken });
+        }
+      })
+      .catch(() => {
+        // Best-effort — if this fails, just fall through to the normal join form.
+      })
+      .finally(() => setCheckingExisting(false));
+  }, [slug]);
 
   function proceedToSubmit(join: PendingJoin) {
     localStorage.setItem(participantStorageKey(slug), join.participantId);
@@ -38,7 +69,7 @@ export function JoinForm({ slug }: { slug: string }) {
       const res = await fetch(`/api/trips/${slug}/join`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders },
-        body: JSON.stringify({ name: name.trim() }),
+        body: JSON.stringify({ name: name.trim(), email: email.trim() || undefined }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -61,6 +92,30 @@ export function JoinForm({ slug }: { slug: string }) {
     }
   }
 
+  if (checkingExisting) {
+    return null;
+  }
+
+  if (existingJoin && !joinAsNew) {
+    return (
+      <div className="mt-6 flex flex-col gap-3">
+        <div className="rounded-lg border border-border bg-surface p-3 text-sm">
+          Looks like you already joined this trip as <strong>{existingJoin.name}</strong>.
+        </div>
+        <button
+          type="button"
+          onClick={() => router.push(`/trip/${slug}/submit/${existingJoin.editToken}`)}
+          className="rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground"
+        >
+          Continue to my preferences
+        </button>
+        <button type="button" onClick={() => setJoinAsNew(true)} className="text-sm text-accent underline">
+          This isn&apos;t me — join as someone else on this device
+        </button>
+      </div>
+    );
+  }
+
   if (pendingDuplicate) {
     return (
       <div className="mt-6 flex flex-col gap-3">
@@ -72,14 +127,14 @@ export function JoinForm({ slug }: { slug: string }) {
         <button
           type="button"
           onClick={() => proceedToSubmit(pendingDuplicate)}
-          className="rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white dark:bg-white dark:text-black"
+          className="rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground"
         >
           Continue anyway
         </button>
         <button
           type="button"
           onClick={() => setPendingDuplicate(null)}
-          className="text-sm underline"
+          className="text-sm text-accent underline"
         >
           Go back
         </button>
@@ -89,21 +144,31 @@ export function JoinForm({ slug }: { slug: string }) {
 
   return (
     <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-3">
-      <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+      <label className="text-sm font-medium text-muted">
         Your name
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="e.g. Sam"
-          className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-black dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-50"
+          className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
+        />
+      </label>
+      <label className="text-sm font-medium text-muted">
+        Email (optional)
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="so we can nudge you if the group needs your input"
+          className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
         />
       </label>
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
       <button
         type="submit"
         disabled={loading}
-        className="mt-2 rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+        className="mt-2 rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground disabled:opacity-50"
       >
         {loading ? "Joining..." : "Continue"}
       </button>

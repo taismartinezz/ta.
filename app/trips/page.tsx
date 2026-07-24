@@ -100,18 +100,18 @@ export default async function TripsHistoryPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-4xl flex-col gap-6 px-6 py-16 text-black dark:text-zinc-50">
+    <div className="mx-auto flex min-h-screen max-w-4xl flex-col gap-6 px-6 py-16 text-foreground">
       <div>
         <h1 className="text-2xl font-semibold">Your trips</h1>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="mt-1 text-sm text-muted">
           Trips you&apos;ve created or joined while logged in.
         </p>
       </div>
 
       {trips.length === 0 ? (
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-muted">
           No trips yet.{" "}
-          <Link href="/" className="underline">
+          <Link href="/" className="text-accent underline">
             Create one
           </Link>
           .
@@ -124,9 +124,9 @@ export default async function TripsHistoryPage() {
               <Link
                 key={trip.id}
                 href={`/trip/${trip.slug}`}
-                className="group overflow-hidden rounded-xl border border-black/10 dark:border-white/10"
+                className="group overflow-hidden rounded-xl border border-border"
               >
-                <div className="relative h-32 w-full bg-zinc-100 dark:bg-zinc-900">
+                <div className="relative h-32 w-full bg-accent-soft">
                   {trip.cover_image_url ? (
                     <Image
                       src={trip.cover_image_url}
@@ -146,7 +146,7 @@ export default async function TripsHistoryPage() {
                 </div>
                 <div className="p-4">
                   <p className="font-medium">{trip.organizer_name}&apos;s trip</p>
-                  <p className="mt-1 text-xs text-zinc-500">{dateRangeLabel(trip.id)}</p>
+                  <p className="mt-1 text-xs text-muted">{dateRangeLabel(trip.id)}</p>
                   <div className="mt-3 flex items-center -space-x-2">
                     {participants.slice(0, 5).map((p, i) => (
                       <span
@@ -165,7 +165,7 @@ export default async function TripsHistoryPage() {
                       </span>
                     )}
                     {participants.length === 0 && (
-                      <span className="text-xs text-zinc-400">No one joined yet</span>
+                      <span className="text-xs text-muted">No one joined yet</span>
                     )}
                   </div>
                 </div>
