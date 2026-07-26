@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { participantStorageKey, editTokenStorageKey } from "@/lib/participant-storage";
 import { ACTIVITY_INTEREST_OPTIONS, ACTIVITY_INTEREST_ICON } from "@/lib/activity-options";
 import { MIN_BUDGET_AMOUNT, MAX_BUDGET_AMOUNT } from "@/lib/constants";
@@ -67,6 +67,15 @@ interface OutlierCheckResponse {
   is_outlier: boolean;
   group_median: number | null;
 }
+
+interface FieldErrors {
+  budget?: string;
+  dates?: string;
+  departure?: string;
+  tripLength?: string;
+}
+
+const errorInputClass = "border-red-500 focus:border-red-500 dark:border-red-500";
 
 const ACTIVITY_LEVELS: { value: ActivityLevel; label: string; Icon: typeof MountainIcon }[] = [
   { value: "relaxing", label: "Relaxing", Icon: MoonIcon },
@@ -155,6 +164,11 @@ export function SubmitForm({
   const [showMorePreferences, setShowMorePreferences] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const budgetRef = useRef<HTMLInputElement>(null);
+  const datesRef = useRef<HTMLFieldSetElement>(null);
+  const departureRef = useRef<HTMLInputElement>(null);
+  const tripLengthRef = useRef<HTMLInputElement>(null);
   const [submitted, setSubmitted] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const [outlierResult, setOutlierResult] = useState<OutlierCheckResponse | null>(null);
@@ -230,6 +244,7 @@ export function SubmitForm({
 
   function updateDateRange(index: number, range: DateRangeInput) {
     setDateRanges((prev) => prev.map((r, i) => (i === index ? range : r)));
+    if (fieldErrors.dates) setFieldErrors((prev) => ({ ...prev, dates: undefined }));
   }
 
   function addDateRange() {
@@ -280,35 +295,46 @@ export function SubmitForm({
     setError(null);
     setJustSaved(false);
 
+    const errors: FieldErrors = {};
+
     const budget = Number(budgetAmount);
     if (!Number.isFinite(budget) || budget < MIN_BUDGET_AMOUNT) {
-      setError("Enter a valid budget");
-      return;
-    }
-    if (budget > MAX_BUDGET_AMOUNT) {
-      setError(`Budget must be ${MAX_BUDGET_AMOUNT.toLocaleString()} or less`);
-      return;
+      errors.budget = "Enter a valid budget";
+    } else if (budget > MAX_BUDGET_AMOUNT) {
+      errors.budget = `Budget must be ${MAX_BUDGET_AMOUNT.toLocaleString()} or less`;
     }
 
     const validDateRanges = dateRanges.filter((r) => r.start && r.end);
     if (validDateRanges.length === 0) {
-      setError("Add at least one available date range");
-      return;
-    }
-
-    if (validDateRanges.some((r) => r.end <= r.start)) {
-      setError("End date must be after the start date for each date range");
-      return;
+      errors.dates = "Add at least one available date range";
+    } else if (validDateRanges.some((r) => r.end <= r.start)) {
+      errors.dates = "End date must be after the start date for each date range";
     }
 
     if (!departureLocation.trim()) {
-      setError("Let us know where you'd be flying from");
-      return;
+      errors.departure = "Let us know where you'd be flying from";
     }
 
     const tripLength = Number(tripLengthDays);
     if (!Number.isInteger(tripLength) || tripLength < 1 || tripLength > 60) {
-      setError("Enter how many days you want the trip to be");
+      errors.tripLength = "Enter how many days you want the trip to be";
+    }
+
+    setFieldErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      // Show every invalid field at once (not just the first one hit) so a
+      // user doesn't have to resubmit repeatedly to discover each problem
+      // one at a time, then bring the first one into view.
+      const firstInvalidRef = errors.budget
+        ? budgetRef
+        : errors.dates
+          ? datesRef
+          : errors.departure
+            ? departureRef
+            : tripLengthRef;
+      firstInvalidRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      firstInvalidRef.current?.focus();
       return;
     }
 
@@ -401,14 +427,20 @@ export function SubmitForm({
         <SectionLegend icon={MoneyBagIcon}>Budget</SectionLegend>
         <div className="flex gap-3">
           <input
+            ref={budgetRef}
             type="number"
             min={MIN_BUDGET_AMOUNT}
             max={MAX_BUDGET_AMOUNT}
             value={budgetAmount}
-            onChange={(e) => setBudgetAmount(e.target.value)}
+            onChange={(e) => {
+              setBudgetAmount(e.target.value);
+              if (fieldErrors.budget) setFieldErrors((prev) => ({ ...prev, budget: undefined }));
+            }}
             onBlur={handleBudgetBlur}
             placeholder="Amount"
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2"
+            className={`w-full rounded-lg border bg-surface px-3 py-2 ${
+              fieldErrors.budget ? errorInputClass : "border-border"
+            }`}
           />
           <select
             value={budgetCurrency}
@@ -420,6 +452,9 @@ export function SubmitForm({
             <option value="GBP">GBP</option>
           </select>
         </div>
+        {fieldErrors.budget && (
+          <p className="text-sm text-red-600 dark:text-red-400">{fieldErrors.budget}</p>
+        )}
         {outlierResult?.is_outlier && (
           <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950">
             <p className="text-amber-900 dark:text-amber-200">
@@ -442,18 +477,27 @@ export function SubmitForm({
       <fieldset className="flex flex-col gap-3">
         <SectionLegend icon={PlaneIcon}>Where are you flying from?</SectionLegend>
         <input
+          ref={departureRef}
           type="text"
           value={departureLocation}
-          onChange={(e) => setDepartureLocation(e.target.value)}
+          onChange={(e) => {
+            setDepartureLocation(e.target.value);
+            if (fieldErrors.departure) setFieldErrors((prev) => ({ ...prev, departure: undefined }));
+          }}
           placeholder="e.g. Chicago, IL"
-          className="w-full rounded-lg border border-border bg-surface px-3 py-2"
+          className={`w-full rounded-lg border bg-surface px-3 py-2 ${
+            fieldErrors.departure ? errorInputClass : "border-border"
+          }`}
         />
+        {fieldErrors.departure && (
+          <p className="text-sm text-red-600 dark:text-red-400">{fieldErrors.departure}</p>
+        )}
         <p className="text-xs text-muted">
           Helps us factor flight costs into the group&apos;s budget estimate.
         </p>
       </fieldset>
 
-      <fieldset className="flex flex-col gap-3">
+      <fieldset ref={datesRef} tabIndex={-1} className="flex flex-col gap-3 outline-none">
         <SectionLegend icon={CalendarIcon}>When are you free?</SectionLegend>
         {dateRanges.map((range, index) => (
           <div key={index} className="flex items-center gap-3">
@@ -478,19 +522,31 @@ export function SubmitForm({
         <button type="button" onClick={addDateRange} className="self-start text-sm text-accent underline">
           + Add another window
         </button>
+        {fieldErrors.dates && (
+          <p className="text-sm text-red-600 dark:text-red-400">{fieldErrors.dates}</p>
+        )}
       </fieldset>
 
       <fieldset className="flex flex-col gap-3">
         <SectionLegend icon={CalendarIcon}>How many days should the trip be?</SectionLegend>
         <input
+          ref={tripLengthRef}
           type="number"
           min={1}
           max={60}
           value={tripLengthDays}
-          onChange={(e) => setTripLengthDays(e.target.value)}
+          onChange={(e) => {
+            setTripLengthDays(e.target.value);
+            if (fieldErrors.tripLength) setFieldErrors((prev) => ({ ...prev, tripLength: undefined }));
+          }}
           placeholder="e.g. 5"
-          className="w-40 rounded-lg border border-border bg-surface px-3 py-2"
+          className={`w-40 rounded-lg border bg-surface px-3 py-2 ${
+            fieldErrors.tripLength ? errorInputClass : "border-border"
+          }`}
         />
+        {fieldErrors.tripLength && (
+          <p className="text-sm text-red-600 dark:text-red-400">{fieldErrors.tripLength}</p>
+        )}
         <p className="text-xs text-muted">
           We&apos;ll build the itinerary to exactly this length, even if your available dates
           span longer.

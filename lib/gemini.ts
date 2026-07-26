@@ -107,15 +107,13 @@ function buildPrompt(submissions: Submission[], feedback: string | null): string
   return prompt;
 }
 
-export async function generateTripPlan(
-  submissions: Submission[],
-  feedback: string | null = null
+async function callGemini(
+  ai: GoogleGenAI,
+  prompt: string
 ): Promise<{ plan: GeneratedTripPlan; raw: Record<string, unknown> }> {
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-
   const response = await ai.models.generateContent({
     model: MODEL,
-    contents: buildPrompt(submissions, feedback),
+    contents: prompt,
     config: {
       responseMimeType: "application/json",
     },
@@ -138,4 +136,26 @@ export async function generateTripPlan(
       usageMetadata: response.usageMetadata ?? null,
     },
   };
+}
+
+export async function generateTripPlan(
+  submissions: Submission[],
+  feedback: string | null = null
+): Promise<{ plan: GeneratedTripPlan; raw: Record<string, unknown> }> {
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+  const prompt = buildPrompt(submissions, feedback);
+
+  // Generating three full destination options (with cost breakdowns and
+  // day-by-day itineraries) is a long, occasionally-flaky call; a transient
+  // network blip, an empty response, or a truncated/malformed JSON body on
+  // the first attempt has been observed to succeed cleanly on an immediate
+  // retry, so absorb one retry here rather than surfacing a failure for
+  // something a second attempt fixes anyway.
+  try {
+    return await callGemini(ai, prompt);
+  } catch (err) {
+    console.error("Gemini generation failed, retrying once", err);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    return await callGemini(ai, prompt);
+  }
 }

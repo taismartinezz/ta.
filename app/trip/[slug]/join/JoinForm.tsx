@@ -157,7 +157,12 @@ export function JoinForm({ slug }: { slug: string }) {
       <label className="text-sm font-medium text-muted">
         Email (optional)
         <input
-          type="email"
+          // Plain text, not type="email": this is a best-effort, optional
+          // field only used for nudge notifications, and the browser's
+          // native format validation was blocking submission on anything
+          // that didn't parse as an email with no visible error in our own
+          // UI, just a native tooltip that's easy to miss.
+          type="text"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="so we can nudge you if the group needs your input"

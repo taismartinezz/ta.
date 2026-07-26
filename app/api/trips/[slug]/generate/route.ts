@@ -6,9 +6,11 @@ import { fetchWikipediaImage } from "@/lib/wikipedia-image";
 import { MIN_SUBMISSIONS_TO_GENERATE } from "@/lib/constants";
 import type { Submission, ItineraryOption } from "@/lib/types";
 
-// Geocoding (rate-limited to ~1 req/sec) plus the LLM calls can comfortably
-// exceed Vercel's default function timeout.
-export const maxDuration = 60;
+// Geocoding (rate-limited to ~1 req/sec) plus the LLM call (now with one
+// built-in retry on failure, see lib/gemini.ts) can comfortably exceed
+// Vercel's default function timeout; ask for the most headroom the plan
+// allows rather than the bare minimum this was measured at.
+export const maxDuration = 120;
 
 export async function POST(
   request: Request,

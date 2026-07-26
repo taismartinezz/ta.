@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { DayPicker, type DateRange } from "react-day-picker";
-import { format, isSameDay, parseISO } from "date-fns";
+import { format, isSameDay, parseISO, startOfDay } from "date-fns";
 import { CalendarIcon } from "./icons";
 
 function toDate(value: string): Date | undefined {
@@ -71,6 +71,10 @@ export function DateRangePicker({
             selected={selected}
             onSelect={handleSelect}
             defaultMonth={selected?.from}
+            // `new Date()` here runs in the browser, so "today" is always the
+            // user's own local day, not the server's, which matters near
+            // midnight when the two can briefly disagree.
+            disabled={{ before: startOfDay(new Date()) }}
             classNames={{
               root: "font-sans text-foreground",
               months: "flex",
