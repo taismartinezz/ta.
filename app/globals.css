@@ -94,6 +94,14 @@
   outline-offset: 3px;
 }
 
+/* Opacity alone barely dims a saturated accent green, so a disabled primary
+   button could still read as clickable; desaturating it too makes "off"
+   unmistakable, and cursor: not-allowed reinforces it isn't. */
+.btn-stamp:disabled {
+  cursor: not-allowed;
+  filter: grayscale(0.5);
+}
+
 /* A rounded, doorway-like top on an otherwise-rectangular photo, evoking an
    arch you're looking through rather than a plain framed rectangle. */
 .arch-photo {

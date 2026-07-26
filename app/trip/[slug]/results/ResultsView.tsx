@@ -56,9 +56,18 @@ export function ResultsView({
   majorityDepartureLocation: string | null;
 }) {
   const router = useRouter();
-  const [participantId] = useState<string | null>(() =>
-    typeof window === "undefined" ? null : localStorage.getItem(participantStorageKey(slug))
-  );
+  // Reading localStorage straight into useState's initializer ran during the
+  // server render too (where it's always null) and then again on the
+  // client's first render (where it's often a real id for anyone who'd
+  // already joined), so the server HTML and the client's first render
+  // disagreed on every participant-gated bit of UI (disabled vote buttons,
+  // the "join to vote" message) and React flagged a hydration mismatch.
+  // Starting from null on both sides and filling it in after mount (once
+  // hydration is already done) keeps the two renders identical.
+  const [participantId, setParticipantId] = useState<string | null>(null);
+  useEffect(() => {
+    setParticipantId(localStorage.getItem(participantStorageKey(slug)));
+  }, [slug]);
   const [reactionRows, setReactionRows] = useState<ReactionRow[]>(reactions);
   const [locking, setLocking] = useState(false);
   const [lockError, setLockError] = useState<string | null>(null);
@@ -252,7 +261,7 @@ export function ResultsView({
                   <div className="mt-3">
                     <p className="text-sm font-medium text-foreground">
                       Est. {option.estimated_cost_currency}{" "}
-                      {option.estimated_cost_per_person.toLocaleString()} per person
+                      {option.estimated_cost_per_person.toLocaleString("en-US")} per person
                     </p>
                     {option.cost_breakdown && (
                       <CostBreakdown
@@ -264,7 +273,7 @@ export function ResultsView({
                       <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-400">
                         <WarningIcon size={14} className="shrink-0" />
                         This is above the budget you submitted ({myBudget.budget_currency}{" "}
-                        {myBudget.budget_amount.toLocaleString()})
+                        {myBudget.budget_amount.toLocaleString("en-US")})
                       </p>
                     )}
                   </div>

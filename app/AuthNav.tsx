@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 export function AuthNav() {
+  const pathname = usePathname();
   const [email, setEmail] = useState<string | null | undefined>(undefined);
 
   useEffect(() => {
@@ -44,9 +46,11 @@ export function AuthNav() {
           </button>
         </>
       ) : (
-        <Link href="/login" className="text-accent underline">
-          Log in
-        </Link>
+        pathname !== "/login" && (
+          <Link href="/login" className="text-accent underline">
+            Log in
+          </Link>
+        )
       )}
     </div>
   );

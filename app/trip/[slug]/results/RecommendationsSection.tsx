@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { participantStorageKey } from "@/lib/participant-storage";
 import { VoiceInputButton } from "@/app/VoiceInputButton";
 
@@ -23,9 +23,12 @@ export function RecommendationsSection({
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [participantId] = useState<string | null>(() =>
-    typeof window === "undefined" ? null : localStorage.getItem(participantStorageKey(slug))
-  );
+  // Same fix as ResultsView.tsx: read localStorage after mount, not in the
+  // initializer, so the server and the client's first render agree.
+  const [participantId, setParticipantId] = useState<string | null>(null);
+  useEffect(() => {
+    setParticipantId(localStorage.getItem(participantStorageKey(slug)));
+  }, [slug]);
 
   async function handleSubmit() {
     setError(null);
