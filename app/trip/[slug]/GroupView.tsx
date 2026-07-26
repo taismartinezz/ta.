@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { MIN_SUBMISSIONS_TO_GENERATE } from "@/lib/constants";
+import { SpinnerIcon } from "@/app/icons";
 
 interface ParticipantRow {
   id: string;
@@ -154,11 +155,18 @@ export function GroupView({
           type="button"
           onClick={handleGenerate}
           disabled={!canGenerate || generating}
-          className="btn-stamp bg-accent px-5 py-2.5 text-center text-sm font-medium text-accent-foreground disabled:opacity-50"
+          className="btn-stamp flex items-center justify-center gap-2 bg-accent px-5 py-2.5 text-center text-sm font-medium text-accent-foreground disabled:opacity-50"
         >
+          {generating && <SpinnerIcon size={16} className="animate-spin" />}
           {generating ? "Generating..." : "Generate itinerary options"}
         </button>
-        {!canGenerate && (
+        {generating && (
+          <p className="text-xs text-muted">
+            This can take up to a minute. We&apos;re building three tailored options for your
+            group.
+          </p>
+        )}
+        {!generating && !canGenerate && (
           <p className="text-xs text-muted">
             Need at least {MIN_SUBMISSIONS_TO_GENERATE} submissions before generating
             ({submittedIds.size}/{MIN_SUBMISSIONS_TO_GENERATE} so far).

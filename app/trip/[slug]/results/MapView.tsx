@@ -31,6 +31,7 @@ export function MapView({ days }: { days: ItineraryDay[] }) {
     }
 
     let map: import("leaflet").Map | undefined;
+    let resizeObserver: ResizeObserver | undefined;
 
     import("leaflet").then((L) => {
       if (!containerRef.current || mapRef.current) {
@@ -73,9 +74,19 @@ export function MapView({ days }: { days: ItineraryDay[] }) {
       if (pins.length > 1) {
         map.fitBounds(bounds, { padding: [24, 24] });
       }
+
+      // Leaflet sizes its tile grid from the container's dimensions at
+      // creation time and doesn't notice later layout changes on its own
+      // (a responsive breakpoint, orientation change, or a sidebar
+      // collapsing can all leave it showing a stale, clipped view).
+      resizeObserver = new ResizeObserver(() => {
+        map?.invalidateSize();
+      });
+      resizeObserver.observe(containerRef.current);
     });
 
     return () => {
+      resizeObserver?.disconnect();
       map?.remove();
       mapRef.current = null;
     };

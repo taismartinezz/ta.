@@ -17,6 +17,7 @@ import {
   HouseIcon,
   PlaneDepartureIcon,
   SunburstIcon,
+  SpinnerIcon,
 } from "@/app/icons";
 import { MapView } from "./MapView";
 import { CostBreakdown } from "./CostBreakdown";
@@ -415,10 +416,17 @@ export function ResultsView({
             type="button"
             onClick={handleRegenerate}
             disabled={regenerating}
-            className="btn-stamp mt-3 bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground disabled:opacity-50"
+            className="btn-stamp mt-3 flex items-center gap-2 bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground disabled:opacity-50"
           >
+            {regenerating && <SpinnerIcon size={16} className="animate-spin" />}
             {regenerating ? "Regenerating..." : "Regenerate itinerary"}
           </button>
+          {regenerating && (
+            <p className="mt-2 text-xs text-muted">
+              This can take up to a minute. We&apos;re building three tailored options for your
+              group.
+            </p>
+          )}
         </div>
       )}
 

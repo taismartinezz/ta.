@@ -20,6 +20,15 @@ function base(props: IconProps) {
   };
 }
 
+export function SpinnerIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <circle cx="12" cy="12" r="8.5" opacity="0.25" />
+      <path d="M20.5 12a8.5 8.5 0 0 0-8.5-8.5" />
+    </svg>
+  );
+}
+
 export function ArrowLeftIcon(props: IconProps) {
   return (
     <svg {...base(props)}>

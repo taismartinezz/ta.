@@ -91,7 +91,7 @@ export default async function ResultsPage({
   }));
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-5xl flex-col gap-8 px-6 py-16 text-foreground">
+    <div className="mx-auto flex min-h-screen min-w-0 max-w-5xl flex-col gap-8 px-6 py-16 text-foreground">
       <div>
         <Link href={`/trip/${slug}`} className="flex items-center gap-1 text-sm text-accent underline">
           <ArrowLeftIcon size={14} />
