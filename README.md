@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ta — Plan a Trip With Your Friends
 
-## Getting Started
+*"Ta"* is a word used in Uruguay to say something is done, settled, or sorted, and that's exactly the point of this app.
 
-First, run the development server:
+Ta takes the pain out of group trip planning. One person creates a trip, shares a link, and everyone submits their own budget, travel dates, and vibe privately — no more messy group chats or spreadsheets. Once enough people have chimed in, Ta uses AI to generate three tailored destination options, complete with day-by-day itineraries, cost breakdowns, and maps, so the group can compare, vote, and lock in a plan together.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Live app: [ta-psi-five.vercel.app](https://ta-psi-five.vercel.app)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Create & share a trip** — Start a trip with just your name and get a shareable invite link for your group.
+- **Private preference collection** — Each participant submits their own budget, home airport, available date windows, trip length, vibe (relaxing/balanced/adventurous), interests, must-haves, and dealbreakers. Submissions stay private until the itinerary is generated.
+- **Optional bonus questions** — A quick round of extra questions (favorite cuisines, languages spoken, nightlife energy, preferred pace, etc.) to help fine-tune recommendations.
+- **Voice input** — Speak your answers instead of typing, for free-text fields like must-haves and dealbreakers.
+- **Live group view** — See who's joined and submitted in real time, with a running tally of responses.
+- **AI-generated itinerary options** — Once at least two people submit, generate three destination options (a top pick, a cheaper alternative, and an alternative vibe), each with:
+  - A mood-setting hero photo and quote
+  - Estimated per-person cost, broken down by lodging, food, activities, local transport, and flights
+  - A full day-by-day itinerary
+  - An interactive map of key locations
+  - Quick links to search flights and stays
+- **Group comparison tools** — Side-by-side comparison table, a chart of date availability overlap across the group, and an anonymized view of the group's budget spread.
+- **Voting & lock-in** — Group members can upvote/downvote options and lock in a final choice.
+- **Regenerate with feedback** — Not quite right? Give feedback (e.g. "cheaper," "more relaxing," "swap day 3 for something outdoors") and regenerate the itinerary.
+- **Recommendations** — Group members can leave recommended spots (with attribution) for the trip.
+- **Open questions for the group** — The AI automatically flags unresolved decisions (e.g. conflicting date ranges, unconfirmed activity preferences) that the group should settle before booking.
+- **Nudge emails** — Optional email reminders (via Resend) to nudge participants who haven't submitted yet.
+- **Accounts** — Optional login (Supabase Auth) to save and revisit your trips.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Tech Stack
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Framework:** [Next.js](https://nextjs.org/) 16 (App Router) + React 19 + TypeScript
+- **Styling:** Tailwind CSS v4
+- **Database & Auth:** [Supabase](https://supabase.com/) (Postgres, `@supabase/ssr`, `@supabase/supabase-js`)
+- **AI:** Google Gemini via `@google/genai` for itinerary generation
+- **Maps:** [Leaflet](https://leafletjs.com/) with OpenStreetMap tiles
+- **Dates:** `date-fns` + `react-day-picker`
+- **Email:** [Resend](https://resend.com/) for nudge notifications
+- **Deployment:** [Vercel](https://vercel.com/)
