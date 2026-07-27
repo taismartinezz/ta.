@@ -6,6 +6,26 @@ Ta takes the pain out of group trip planning. One person creates a trip, shares 
 
 Live app: [ta-psi-five.vercel.app](https://ta-psi-five.vercel.app)
 
+## Screenshots
+
+**Create a trip**
+![Create a trip](screenshots/landing-page.png)
+
+**Live group view** — track who's joined and submitted in real time
+![Live group view](screenshots/group-view.png)
+
+**Private preferences form** — budget, dates, vibe, and interests
+![Submit preferences](screenshots/submit-preferences.png)
+
+**Generated trip results**
+![Trip results](screenshots/results-hero.png)
+
+**Group comparison** — cost, date overlap, and budget spread across the group
+![Comparison table](screenshots/results-comparison.png)
+
+**Destination detail** — cost breakdown, day-by-day itinerary, and map
+![Destination detail](screenshots/results-destination-detail.png)
+
 ## Features
 
 - **Create & share a trip** — Start a trip with just your name and get a shareable invite link for your group.
@@ -14,11 +34,11 @@ Live app: [ta-psi-five.vercel.app](https://ta-psi-five.vercel.app)
 - **Voice input** — Speak your answers instead of typing, for free-text fields like must-haves and dealbreakers.
 - **Live group view** — See who's joined and submitted in real time, with a running tally of responses.
 - **AI-generated itinerary options** — Once at least two people submit, generate three destination options (a top pick, a cheaper alternative, and an alternative vibe), each with:
-  - A mood-setting hero photo and quote
-  - Estimated per-person cost, broken down by lodging, food, activities, local transport, and flights
-  - A full day-by-day itinerary
-  - An interactive map of key locations
-  - Quick links to search flights and stays
+- A mood-setting hero photo and quote
+- Estimated per-person cost, broken down by lodging, food, activities, local transport, and flights
+- A full day-by-day itinerary
+- An interactive map of key locations
+- Quick links to search flights and stays
 - **Group comparison tools** — Side-by-side comparison table, a chart of date availability overlap across the group, and an anonymized view of the group's budget spread.
 - **Voting & lock-in** — Group members can upvote/downvote options and lock in a final choice.
 - **Regenerate with feedback** — Not quite right? Give feedback (e.g. "cheaper," "more relaxing," "swap day 3 for something outdoors") and regenerate the itinerary.
